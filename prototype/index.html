@@ -1590,6 +1590,27 @@ h1,h2,h3,.fold-body h3,.ccard b,.gcard b,.cd-info h1{word-break:keep-all}
 .dnote{font-size:12px;color:var(--brand);font-weight:600}
 .rv-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:16px}
 .rv-top .srcnote{margin:0}
+
+.rk-fold{height:0;overflow:hidden;opacity:0;transition:height .45s cubic-bezier(.2,.8,.2,1),opacity .35s}
+.rk-fold.open{height:auto;opacity:1}
+.rk-morebar{width:100%;height:44px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;font-weight:700;color:var(--sub);background:var(--hover);border-radius:10px;margin:8px 0 2px}
+.rk-morebar:hover{color:var(--fg);background:#ececef}
+.rk-morebar svg{transition:transform .35s}
+.rk-morebar[aria-expanded="true"] svg{transform:rotate(180deg)}
+@media (prefers-reduced-motion:reduce){.rk-fold,.rk-morebar svg{transition:none}}
+
+.totop{position:fixed;right:20px;bottom:24px;z-index:70;width:52px;height:52px;border-radius:50%;background:var(--bg);border:1px solid var(--line);box-shadow:0 6px 20px rgba(0,0,0,.12);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;color:var(--fg);font-size:10px;font-weight:800;letter-spacing:.04em}
+.totop[hidden]{display:none}
+.totop:hover{border-color:var(--fg)}
+.frame[data-device="mobile"] .totop{bottom:calc(84px + env(safe-area-inset-bottom,0px));right:16px;width:46px;height:46px}
+.frame.focus[data-device="mobile"] .totop{bottom:calc(190px + env(safe-area-inset-bottom,0px))}
+
+.tx-t{display:inline-flex;align-items:baseline;gap:6px}
+.tx-t .tx-d{font-size:12px;font-weight:700;color:var(--fg);background:var(--hover);border-radius:6px;padding:3px 8px;align-self:center}
+.tx-t b{font-size:19px;font-weight:800;color:var(--fg);letter-spacing:-.01em}
+.tx-t .tx-s{font-size:13px;color:var(--sub);margin-left:-5px}
+.tx-h{row-gap:6px}
+.coinchip{white-space:nowrap}
 </style>
 
 <div class="devbar" role="group" aria-label="기기 미리보기">
@@ -1638,6 +1659,7 @@ h1,h2,h3,.fold-body h3,.ccard b,.gcard b,.cd-info h1{word-break:keep-all}
   <a href="#chat" data-nav="chat"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="8"/><path d="M8.5 10.5l2 1-2 1M15.5 10.5l-2 1 2 1"/></svg>캐릭터톡</a>
   <a href="#stock" data-nav="stock"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="5" width="16" height="5" rx="1"/><path d="M5 10v9h14v-9M10 14h4"/></svg>재고</a>
 </nav>
+<button class="totop" id="toTop" aria-label="맨 위로" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 14 6-6 6 6"/></svg><span>TOP</span></button>
 <div class="toast" id="toast" role="status"></div>
 </div>
 
@@ -2170,6 +2192,72 @@ async function excelExport(){
   const buf=await wb.xlsx.writeBuffer(), d=new Date();
   await saveFile(`리틀부스_재고_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.xlsx`, new Blob([buf]));
 }
+/* 결과·회고 엑셀 (시트별) */
+async function reviewExcel(e){
+  let X; try{ X=await loadExcel(); }catch(_){ toast('엑셀 도구를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'); return; }
+  const wb=new X.Workbook(); wb.creator='LittleBooth';
+  const BLK='FF111111', GRY='FFF2F2F4', LINE='FFE4E4E8', PINK='FFE5487F', SUB='FF6B6B72';
+  const num=v=>{ if(typeof v==='number'||v===''||v==null) return v; const n=Number(String(v).replace(/,/g,'')); return isNaN(n)?v:n; };
+  const fill=c=>({type:'pattern',pattern:'solid',fgColor:{argb:c}});
+  const title=(ws,r,t,sub)=>{ const c=ws.getCell(r,1); c.value=t; c.font={bold:true,size:13,color:{argb:BLK}}; if(sub){ const d=ws.getCell(r+1,1); d.value=sub; d.font={size:10,color:{argb:SUB}}; return r+2; } return r+1; };
+  const table=(ws,r,rows,fmt={},opt={})=>{
+    const isNum=j=>['money','pct','int'].some(k=>(fmt[k]||[]).includes(j));
+    rows.forEach((row,i)=>{ const R=ws.getRow(r+i);
+      row.forEach((v,j)=>{ const c=R.getCell(j+1);
+        if(i===0){ c.value=v; c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill=fill(BLK); c.alignment={vertical:'middle',horizontal:isNum(j)?'right':'left'}; return; }
+        let val=(fmt.text||[]).includes(j)?v:num(v); if((fmt.pct||[]).includes(j)&&typeof val==='number') val=Math.round(val*10)/1000; c.value=val===''?null:val;
+        c.border={bottom:{style:'thin',color:{argb:LINE}}};
+        if((fmt.money||[]).includes(j)) c.numFmt='#,##0"원";-#,##0"원"'; else if((fmt.pct||[]).includes(j)) c.numFmt='0.0%'; else if((fmt.int||[]).includes(j)) c.numFmt='#,##0';
+        if(isNum(j)) c.alignment={horizontal:'right'}; });
+      if(i===0) R.height=22;
+      if(i>0 && (opt.boldLast||0) && i>=rows.length-opt.boldLast) R.eachCell({includeEmpty:true},(c,j)=>{ if(j>row.length) return; c.font={bold:true}; c.fill=fill(GRY); if(i===rows.length-opt.boldLast) c.border={top:{style:'medium',color:{argb:BLK}},bottom:{style:'thin',color:{argb:LINE}}}; });
+    });
+    return r+rows.length+1; };
+  const widths=(ws,w)=>w.forEach((x,i)=>ws.getColumn(i+1).width=x);
+  const r0=revenue(e), o=orders(e), disc=discOf(e);
+  // 1) 개요: 제목 · 날짜·장소·데이터 출처 · 요약
+  const s1=wb.addWorksheet('개요'); widths(s1,[18,44]);
+  s1.getCell('A1').value=e.title; s1.getCell('A1').font={bold:true,size:16};
+  s1.getCell('A2').value='리틀부스 결과·회고'; s1.getCell('A2').font={size:10,color:{argb:SUB}};
+  let r=4;
+  [['날짜',e.date+(e.dateNote?` (${e.dateNote})`:'')],['장소',e.place],['데이터 출처',e.source||'리틀부스 기록']].forEach(([k,v])=>{ const a=s1.getCell(r,1), b=s1.getCell(r,2); a.value=k; a.font={bold:true,color:{argb:SUB}}; a.fill=fill(GRY); b.value=v; b.border={bottom:{style:'thin',color:{argb:LINE}}}; a.border=b.border; r++; });
+  r++; r=title(s1,r,'요약');
+  const sum=[['항목','값'],['매출',r0],['주문',o],['객단가',o?Math.round(r0/o):''],['방문',e.visits||'기록 없음'],['할인 합계',disc]];
+  table(s1,r,sum,{});
+  [[1,'#,##0"원"'],[2,'#,##0"건"'],[3,'#,##0"원"'],[4,'#,##0"명"'],[5,'#,##0"원"']].forEach(([i,f])=>{ const c=s1.getCell(r+i,2); if(typeof c.value==='number') c.numFmt=f; c.alignment={horizontal:'right'}; });
+  // 2) 품목·판매: 품목별 매출 · 판매 수익
+  const s2=wb.addWorksheet('품목·판매'); widths(s2,[8,10,28,14,18,12,10,10,10,11,13,12,13]);
+  r=title(s2,1,'품목별 매출');
+  r=table(s2,r,csvRows(e,'cat'),{int:[1,2],money:[3],pct:[4]},{boldLast:1});
+  r=title(s2,r,'판매 수익 (상품별)','상품별 순수익 = 판매금액 − 원가. 할인은 상품별로 나누지 않고 합계에서만 빼요.');
+  const rk=csvRows(e,'rank'), d=rk.slice(1), sA=d.reduce((a,x)=>a+x[10],0), sN=d.reduce((a,x)=>a+x[12],0), sQ=d.reduce((a,x)=>a+x[7],0);
+  rk.push(['합계','','','','','','',sQ,'','',sA,'100.0',sN]); if(disc) rk.push(['할인 차감 후','','','','','','','','','','','',sN-disc]);
+  table(s2,r,rk,{int:[0,7,8],money:[6,10,12],pct:[9,11],text:[1]},{boldLast:disc?2:1});
+  // 3) 정산: 결제수단별 · 소유자별 · 요약 · 합계
+  const s3=wb.addWorksheet('정산'); widths(s3,[22,24,10,30,11,10,14]);
+  r=title(s3,1,'결제수단별 정산');
+  r=table(s3,r,csvRows(e,'pay'),{int:[1],money:[2],pct:[3]},{boldLast:1});
+  r=title(s3,r,'소유자별 정산 (상품별)');
+  const ow=csvRows(e,'owner'), cut=ow.findIndex(x=>!x.length);
+  r=table(s3,r,cut>0?ow.slice(0,cut):ow,{money:[4,6],int:[5],text:[2]});
+  const t=tally(e), per={}, joint={}; (e.items||[]).forEach(i=>{ const p=P(i.id); if(p&&p.settle==='개인'&&p.price>0) per[p.owner]=per[p.owner]||0; }); Object.keys(t).filter(k=>P(k)&&P(k).price>0).forEach(k=>{ const p=P(k), v=p.price*t[k]; if(p.settle==='공동') joint[p.owner]=(joint[p.owner]||0)+v; else per[p.owner]=(per[p.owner]||0)+v; });
+  r=title(s3,r,'요약 (담당자별)');
+  r=table(s3,r,[['구분','소유자','금액'],...Object.entries(per).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[Object.keys(joint).length?'개인 지급':'판매',k,v]),...Object.entries(joint).sort((a,b)=>b[1]-a[1]).map(([k,v])=>['공동 정산 상품',k,v])],{money:[2]});
+  const pt=Object.values(per).reduce((a,b)=>a+b,0), jt=Object.values(joint).reduce((a,b)=>a+b,0);
+  r=title(s3,r,'합계');
+  const tot=[['항목','','금액'],['상품 판매금액 (할인 전)','',pt+jt],['할인','',-disc],['총 판매금액','',r0]];
+  if(jt) tot.push(['개인에게 지급할 금액','',pt],['공동으로 정산할 금액 (할인 차감)','',jt-disc]);
+  table(s3,r,tot,{money:[2]},{boldLast:jt?3:1});
+  if(jt){ s3.getCell(r+4,1).font={bold:true,color:{argb:PINK}}; s3.getCell(r+4,3).font={bold:true,color:{argb:PINK}}; }
+  // 4) 판매 기록
+  const s4=wb.addWorksheet('판매 기록',{views:[{state:'frozen',ySplit:2}]}); widths(s4,[11,20,11,9,28,12,22,10,7,11,10,13,24]);
+  s4.getCell('A1').value='판매 기록 (결제 시각순)'; s4.getCell('A1').font={bold:true,size:13};
+  const tx=csvRows(e,'tx');
+  if(tx.length>1){ table(s4,2,tx,{money:[7,9,10,11],int:[8],text:[0,3]}); s4.autoFilter={from:{row:2,column:1},to:{row:2,column:tx[0].length}}; }
+  else { const c=s4.getCell('A3'); c.value=e.noTime?`개별 결제 기록이 없는 행사예요. 결제 ${o}건의 결제수단별 합계만 남아 있어요.`:'결제 기록이 없어요.'; c.font={color:{argb:SUB}}; }
+  const buf=await wb.xlsx.writeBuffer();
+  await saveFile(`${fileBase(e)}_결과회고.xlsx`, new Blob([buf]));
+}
 /* 판매 순위 표 */
 const prevEv = e => { const d=evDate(e); return events.filter(x=>x!==e&&x.status!=='prep'&&evDate(x)&&evDate(x)<d).sort((a,b)=>evDate(b)-evDate(a))[0]||null; };
 function optTally(ev){ const t={}; if(ev.optBase) for(const k in ev.optBase) t[k]=ev.optBase[k]; else { const n=Object.values(ev.base).reduce((a,b)=>a+b,0); if(n){ t['선물 포장']=Math.round(n*.14); t['쇼핑백']=Math.round(n*.22); } }
@@ -2187,21 +2275,23 @@ function rankTable(e){
   const r=ui.rk, rows=rankRows(e,r.tab).sort((a,b)=>b[r.sort]-a[r.sort]);
   const totAmt=rows.reduce((a,x)=>a+x.amt,0)||1, tdisc=discOf(e), tcost=Object.entries(tally(e)).reduce((a,[k,q])=>a+((P(k)&&P(k).cost)||0)*q,0), totNet=r.tab==='옵션'?rows.reduce((a,x)=>a+x.net,0):totAmt-tdisc-tcost;
   const pct=(a,b)=>Math.round(a/b*100);
-  const shown=r.more?rows:rows.slice(0,5), SORTS=[['qty','판매개수 높은 순'],['amt','판매금액 높은 순'],['net','순수익 높은 순']];
+  const SORTS=[['qty','판매개수 높은 순'],['amt','판매금액 높은 순'],['net','순수익 높은 순']];
   return `<section class="ovs">
     <h3>판매 순위</h3>
     <div class="rk-bar"><div class="rk-tabs" role="group" aria-label="순위 기준">${['상품','옵션','카테고리'].map(t=>`<button aria-pressed="${r.tab===t}" data-rktab="${t}">${t}</button>`).join('')}</div>
       <label class="fsel">정렬<select data-rksort="1">${SORTS.map(([k,l])=>`<option value="${k}" ${r.sort===k?'selected':''}>${l}</option>`).join('')}</select></label></div>
     ${rows.length?`<div class="rk-t" role="table">
       <div class="rk-h" role="row"><span>순위</span><span>${r.tab==='상품'?'상품명':r.tab}</span><span>판매개수</span><span>판매금액</span><span title="판매금액에서 원가와 할인을 뺀 금액">순수익</span></div>
-      ${shown.map((x,i)=>`<div class="rk-r" role="row" ${r.tab==='상품'?`data-pid="${x.key}"`:''}>
+      ${(()=>{ const row=(x,i)=>`<div class="rk-r" role="row" ${r.tab==='상품'?`data-pid="${x.key}"`:''}>
         <span class="rk-n tn ${i===0?'top':''}">${i+1}</span>
         <span class="rk-name"><b>${x.name}</b><small>${x.sub}</small></span>
         <span class="tn"><b>${x.qty}개</b>${x.stock?`<small class="rk-d">반입 ${x.stock}개 중 <em>${pct(x.qty,x.stock)}%</em></small>`:'<small class="rk-d">재고 없는 옵션</small>'}</span>
         <span class="tn"><b>${won(x.amt)}</b><small class="rk-d">전체의 <em>${pct(x.amt,totAmt)}%</em></small></span>
-        <span class="tn"><b>${won(x.net)}</b><small class="rk-d">마진 ${x.amt?pct(x.net,x.amt):0}%</small></span></div>`).join('')}
+        <span class="tn"><b>${won(x.net)}</b><small class="rk-d">마진 ${x.amt?pct(x.net,x.amt):0}%</small></span></div>`;
+        const top=rows.slice(0,5).map((x,i)=>row(x,i)).join(''), rest=rows.slice(5);
+        return top+(rest.length?`<div class="rk-fold ${r.more?'open':''}" id="rkFold"><div class="rk-fold-in">${rest.map((x,i)=>row(x,i+5)).join('')}</div></div><button class="rk-morebar" data-rkmore="1" aria-expanded="${!!r.more}" aria-controls="rkFold"><span>${r.more?'접기':`${rest.length}개 더 보기`}</span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"/></svg></button>`:''); })()}
       <div class="rk-r rk-sum" role="row"><span></span><span class="rk-name"><b>합계</b><small>${rows.length}개 ${r.tab==='상품'?'상품':r.tab}</small></span><span class="tn"><small>총 판매</small><b>${rows.reduce((a,x)=>a+x.qty,0)}개</b></span><span class="tn"><small>총 매출</small><b>${won(totAmt)}</b></span><span class="tn"><small>순수익 · 마진 ${pct(totNet,totAmt)}%</small><b class="rk-big">${won(totNet)}</b></span></div>
-    </div>${rows.length>5?`<button class="tbtn rk-more" data-rkmore="1">${r.more?'접기':`${rows.length-5}개 더 보기`}</button>`:''}
+    </div>
     <p class="tc-cap">상품별 순수익 = 판매금액 − 원가. 할인은 상품별로 나누지 않고 합계 순수익에서만 빼요.${tcost?' 원가는 재고 관리에서 상품마다 입력한 값이에요.':' 이 행사 상품은 원가가 입력되지 않아 원가를 0원으로 계산했어요.'}</p>`
     :`<p style="color:var(--muted);font-size:14px">${r.tab==='옵션'?'옵션이 붙은 판매가 없어요.':'판매 기록이 없어요.'}</p>`}
   </section>`;
@@ -2217,18 +2307,23 @@ function hourly(e){ if(e.noTime){ const h={}; for(let k=9;k<=21;k++) h[k]=0; ret
   for(let k=9;k<=21;k++) h[k]=0; if(rest) for(const k in w) h[k]+=Math.round(rest*w[k]/sum/100)*100;
   e.sales.forEach(s=>{ const hr=+(s.time||'0').split(':')[0]; h[hr]=(h[hr]||0)+s.total; }); return h; }
 function daily(e){ const ds=evDays(e), r=revenue(e); if(ds.length<2) return ds.map(d=>({d,v:r})); const w=ds.map((_,i)=>i===ds.length-1?.58:.42/(ds.length-1)); return ds.map((d,i)=>({d,v:Math.round(r*w[i]/100)*100})); }
-function visitHours(e){ const h={}; (e.visitTimes||[]).forEach(t=>{ const k=+t.split(':')[0]; h[k]=(h[k]||0)+1; }); return h; }
-function visitCap(e){ const vt=e.visitTimes||[]; if(!vt.length) return ''; const h=visitHours(e), pk=Object.keys(h).sort((a,b)=>h[b]-h[a])[0]; return `방문 기록 ${vt.length}회 · 가장 많이 온 시간 <b>${String(pk).padStart(2,'0')}:00</b>대 (${h[pk]}명)`; }
+const toMin = t => { const [h,m]=t.split(':').map(Number); return h*60+m; };
+const hm = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+function visitBins(e){ const b={}; (e.visitTimes||[]).forEach(t=>{ const k=Math.floor(toMin(t)/5)*5; b[k]=(b[k]||0)+1; }); return b; }
+function visitCap(e){ const vt=e.visitTimes||[]; if(!vt.length) return ''; const b=visitBins(e), pk=Object.keys(b).sort((x,y)=>b[y]-b[x]||x-y)[0], H={}; vt.forEach(t=>{const h=+t.split(':')[0]; H[h]=(H[h]||0)+1;}); const ph=Object.keys(H).sort((a,c)=>H[c]-H[a])[0];
+  return `방문 기록 ${vt.length}회 · 5분 단위 최다 <b>${hm(+pk)}~${hm(+pk+5)}</b> (${b[pk]}명) · 시간 단위 최다 ${String(ph).padStart(2,'0')}:00대 (${H[ph]}명)`; }
 function visitSvg(e){
   const vt=e.visitTimes||[]; if(!vt.length) return `<p class="nodata">방문 시각 기록이 없어요. 운영 중에 [방문 +1]을 누르면 시각이 함께 남아요.${e.visits?` (방문 합계 ${e.visits}명만 있음)`:''}</p>`;
-  const h=visitHours(e), ks=Object.keys(h).map(Number), lo=Math.min(9,...ks), hi=Math.max(21,...ks), hrs=[]; for(let k=lo;k<=hi;k++) hrs.push(k);
-  const W=640,H=220,pb=30,pt=30,bw=W/hrs.length,max=Math.max(1,...Object.values(h)), pkv=Math.max(...Object.values(h));
-  return `<svg viewBox="0 0 ${W} ${H}" class="tc-svg" role="img" aria-label="시간대별 방문"><line x1="0" x2="${W}" y1="${H-pb}" y2="${H-pb}" stroke="var(--line)"/>
-    ${hrs.map((k,i)=>{const v=h[k]||0, x=bw*i+bw/2, bh=(H-pt-pb)*v/max, w=bw*.55, pk=v===pkv&&v>0, lab=`${String(k).padStart(2,'0')}:00`;
-      return `<g class="tc-g" data-tip="${qa(`<b>${lab}</b><span><i class="k1"></i>방문<em>${v}명</em></span>`)}" tabindex="0"><rect x="${x-bw/2}" y="0" width="${bw}" height="${H}" fill="transparent"/>
-      <rect x="${x-w/2}" y="${H-pb-Math.max(bh,3)}" width="${w}" height="${Math.max(bh,3)}" rx="5" fill="${pk?'var(--brand)':v?'var(--fg)':'#e4e4e8'}"/>
-      ${v?`<text x="${x}" y="${H-pb-Math.max(bh,3)-8}" text-anchor="middle" font-size="12" font-weight="700" fill="${pk?'var(--brand)':'var(--fg)'}">${v}</text>`:''}
-      ${i%2===0?`<text x="${x}" y="${H-pb+19}" text-anchor="middle" font-size="12" fill="var(--sub)">${lab}</text>`:''}</g>`}).join('')}</svg>`;
+  const b=visitBins(e), mins=vt.map(toMin), lo=Math.floor(Math.min(...mins)/60)*60, hi=Math.ceil((Math.max(...mins)+1)/60)*60, bins=[]; for(let m=lo;m<hi;m+=5) bins.push(m);
+  const W=640,H=220,pb=30,pt=24,bw=W/bins.length,max=Math.max(1,...Object.values(b)), pkv=Math.max(...Object.values(b)), w=Math.max(2,bw*.7);
+  return `<svg viewBox="0 0 ${W} ${H}" class="tc-svg" role="img" aria-label="5분 단위 방문">
+    ${[.5,1].map(f=>`<line x1="0" x2="${W}" y1="${H-pb-(H-pt-pb)*f}" y2="${H-pb-(H-pt-pb)*f}" stroke="var(--line)" stroke-dasharray="2 4"/><text x="2" y="${H-pb-(H-pt-pb)*f-4}" font-size="10" fill="var(--muted)">${Math.round(max*f)}명</text>`).join('')}
+    <line x1="0" x2="${W}" y1="${H-pb}" y2="${H-pb}" stroke="var(--line)"/>
+    ${bins.map((m,i)=>{const v=b[m]||0, x=bw*i+bw/2, bh=(H-pt-pb)*v/max, pk=v===pkv&&v>0;
+      return `<g class="tc-g" data-tip="${qa(`<b>${hm(m)}~${hm(m+5)}</b><span><i class="k1"></i>방문<em>${v}명</em></span>`)}" tabindex="0"><rect x="${x-bw/2}" y="0" width="${bw}" height="${H}" fill="transparent"/>
+      ${v?`<rect x="${x-w/2}" y="${H-pb-bh}" width="${w}" height="${bh}" rx="1.5" fill="${pk?'var(--brand)':'var(--fg)'}"/>`:''}
+      ${m%60===0?`<line x1="${x-bw/2}" x2="${x-bw/2}" y1="${H-pb}" y2="${H-pb+5}" stroke="var(--line)"/><text x="${x-bw/2}" y="${H-pb+19}" text-anchor="${i===0?'start':'middle'}" font-size="11" fill="var(--sub)">${hm(m)}</text>`:''}</g>`}).join('')}
+  </svg>`;
 }
 function timeCharts(e){
   if(e.noTime) return `<section class="ovs"><h3>일별·시간대별 매출</h3><p class="nodata">이 행사는 결제별 시각 기록이 없어서 보여줄 수 없어요. 상품별 판매량과 결제수단별 합계만 남아 있어요.</p></section>`;
@@ -2369,19 +2464,20 @@ function retroBlock(e){
     <ul class="retro">${e.retros.map((r,k)=>`<li><span class="rt-av">나</span><div><small class="tn">${r.at}</small><p>${r.t}</p></div><button class="rt-x" data-rtrm="${k}" aria-label="회고 지우기">×</button></li>`).join('')}</ul>
     <form id="rvForm" class="rvf"><textarea id="rvIn" rows="1" placeholder="오늘 어땠는지 한 줄 남기기" aria-label="회고 남기기"></textarea><button class="btn btn-blk btn-sm">남기기</button></form></section>`;
 }
+const txTime = at => { const [d,t]=at.split(' '), [y,m,dd]=d.split('-').map(Number), wd=WD[new Date(y,m-1,dd).getDay()], [hh,mi,ss]=(t||'').split(':'); return `<time class="tx-t tn" datetime="${d}T${t}"><span class="tx-d">${m}월 ${dd}일 (${wd})</span><b>${hh}:${mi}</b><span class="tx-s">:${ss||'00'}</span></time>`; };
 function txList(e){
-  const ss=e.sales.slice().sort((a,b)=>saleAt(e,b).localeCompare(saleAt(e,a))), shown=ui.txMore?ss:ss.slice(0,8);
+  const ss=e.sales.slice().sort((a,b)=>saleAt(e,b).localeCompare(saleAt(e,a))), shown=ss;
   if(!ss.length) return `<section class="ovs"><h3>결제 내역</h3><p class="nodata">${e.noTime?`개별 결제 기록이 없는 행사예요. 결제 ${orders(e)}건의 결제수단별 합계만 남아 있어요.`:Object.keys(e.base).length?'예시 행사라 개별 결제 대신 합계만 보관돼요.':'결제 기록이 없어요.'}</p></section>`;
   return `<section class="ovs"><h3>결제 내역 <span class="ov-n" style="font-weight:500">${ss.length}건</span> ${csvBtn(e,'tx','결제 내역')}</h3>
-    <ul class="txl">${shown.map(x=>`<li><div class="tx-h"><time class="tn">${saleAt(e,x)}</time><span class="tx-pay">${x.pay}</span>${x.note?`<span class="tx-note">${x.note}</span>`:''}<b class="tn">${won(x.total)}</b></div>
+    <ul class="txl">${shown.map(x=>`<li><div class="tx-h">${txTime(saleAt(e,x))}<span class="tx-pay">${x.pay}</span>${x.note?`<span class="tx-note">${x.note}</span>`:''}<b class="tn">${won(x.total)}</b></div>
       <ul class="tx-items">${x.items.map(i=>{const p=P(i.id)||{name:i.id,price:0};return `<li><span>${p.code?`<em class="tn">${p.code}</em>`:''}${p.name} <small>${p.owner||''}</small></span><span class="tn">${won(p.price)} × ${i.q}</span><span class="tn">${won(p.price*i.q)}</span></li>`}).join('')}
       ${x.discount?`<li class="tx-disc"><span>할인</span><span></span><span class="tn">−${won(x.discount)}</span></li>`:''}</ul></li>`).join('')}</ul>
-    ${ss.length>8?`<button class="tbtn rk-more" data-txmore="1">${ui.txMore?'접기':`${ss.length-8}건 더 보기`}</button>`:''}</section>`;
+    </section>`;
 }
 function reviewTab(e){
   const rev=revenue(e), pay = Object.keys(e.pay).length?e.pay:{카드:.6,현금:.3,이체:.1};
   return `<div class="ovl">
-    <div class="rv-top">${e.source?`<p class="srcnote">데이터 출처: ${e.source}${e.discNote?` · ${e.discNote}`:''}</p>`:'<span></span>'}<button class="btn btn-out btn-sm rv-csv" data-csv="${e.id}|all">↓ 결과·회고 CSV 내려받기</button></div>
+    <div class="rv-top">${e.source?`<p class="srcnote">데이터 출처: ${e.source}${e.discNote?` · ${e.discNote}`:''}</p>`:'<span></span>'}<button class="btn btn-out btn-sm rv-csv" data-rvxl="${e.id}">↓ 결과·회고 엑셀 내려받기</button></div>
     <section class="ovs">${statRow(e)}</section>
     ${timeCharts(e)}
     ${catBars(e)}
@@ -2843,12 +2939,13 @@ document.addEventListener('click',ev=>{
   if(d.gend){ guideGo(-1); return; }
   if(d.xlmore){ ui.xlMore=!ui.xlMore; route(); return; }
   if(d.xl){ ui.xlMore=false; route(); d.xl==='tpl'?excelTemplate():excelExport(); return; }
+  if(d.rvxl){ reviewExcel(E(d.rvxl)); return; }
   if(d.csv){ const [eid,kind]=d.csv.split('|'), ev2=E(eid), NM={all:'결과회고',cat:'품목별매출',rank:'판매순위',pay:'결제수단',tx:'결제내역',owner:'소유자별정산'}; saveFile(`${fileBase(ev2)}_${NM[kind]}.csv`, toCSV(csvRows(ev2,kind))); return; }
   if(ui.xlMore&&!b.closest('.more-w')){ ui.xlMore=false; route(); }
   if(d.txmore){ ui.txMore=!ui.txMore; route(); return; }
   if(d.tc){ ui.tc=d.tc; route(); return; }
   if(d.rktab){ ui.rk.tab=d.rktab; ui.rk.more=false; route(); return; }
-  if(d.rkmore){ ui.rk.more=!ui.rk.more; route(); return; }
+  if(d.rkmore){ ui.rk.more=!ui.rk.more; const f=$('#rkFold'); if(f){ const h=f.querySelector('.rk-fold-in').scrollHeight; if(ui.rk.more){ f.classList.add('open'); f.style.height='0px'; requestAnimationFrame(()=>{ f.style.height=h+'px'; }); setTimeout(()=>{ if(ui.rk.more) f.style.height=''; },480); } else { f.style.height=h+'px'; requestAnimationFrame(()=>{ f.classList.remove('open'); f.style.height='0px'; }); setTimeout(()=>{ f.style.height=''; },480); } b.setAttribute('aria-expanded',String(ui.rk.more)); const n=f.querySelectorAll('.rk-r').length; b.querySelector('span').textContent=ui.rk.more?'접기':`${n}개 더 보기`; if(!ui.rk.more) setTimeout(()=>b.scrollIntoView({block:'nearest',behavior:'smooth'}),300); } else route(); return; }
   else if(d.popt){ const l=ui.lines.find(x=>x.id===ui.selLine); if(l){ const i=l.opts.indexOf(d.popt); i<0?l.opts.push(d.popt):l.opts.splice(i,1); route(); } }
   else if(d.ptab){ ui.ptab=d.ptab; route(); }
   else if(d.otype){ ui.otype=d.otype; route(); }
@@ -2946,5 +3043,7 @@ document.addEventListener('mouseover',tcTip); document.addEventListener('focusin
 addEventListener('hashchange',()=>{ui.confirmEnd=false;ui.itemsEdit=null;ui.modal=null;ui.pd=null;ui.memoOpen=false;frame.classList.remove('sheet');route();scroller().scrollTo(0,0)});
 addEventListener('resize',applyDevice);
 (()=>{ let u=null; try{u=localStorage.getItem('lb-user')}catch(_){} if(u==='demo') loadData('demo'); else if(u&&ACCOUNTS[u]) loadData(ACCOUNTS[u]); })();
+(()=>{ const sc=document.querySelector('.scroll')||document.scrollingElement, tb=$('#toTop'); const upd=()=>{ tb.hidden=!((sc.scrollTop||0)>500) || frame.classList.contains('auth-on'); };
+  sc.addEventListener('scroll',upd,{passive:true}); addEventListener('hashchange',()=>setTimeout(upd,50)); tb.addEventListener('click',()=>sc.scrollTo({top:0,behavior:'smooth'})); })();
 applyDevice(); route();
 </script>
