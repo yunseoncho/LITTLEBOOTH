@@ -1525,7 +1525,7 @@ h1,h2,h3,.fold-body h3,.ccard b,.gcard b,.cd-info h1{word-break:keep-all}
 .tx-h time{font-size:13px;color:var(--sub)}
 .tx-pay{font-size:11px;font-weight:700;background:var(--hover);border-radius:999px;padding:2px 8px}
 .tx-note{font-size:11px;font-weight:700;color:var(--brand);background:var(--brand-soft);border-radius:999px;padding:2px 8px}
-.tx-h b{margin-left:auto;font-size:15px}
+.tx-h b{margin-left:auto;font-size:16px;color:#2563eb}
 .tx-items{list-style:none;margin:6px 0 0;padding:0 0 0 2px}
 .tx-items li{display:grid;grid-template-columns:minmax(0,1fr) auto 84px;gap:10px;font-size:13px;color:var(--sub);padding:2px 0}
 .tx-items li span:last-child{text-align:right;color:var(--fg)}
@@ -1592,7 +1592,7 @@ h1,h2,h3,.fold-body h3,.ccard b,.gcard b,.cd-info h1{word-break:keep-all}
 .rv-top .srcnote{margin:0}
 
 .rk-fold{height:0;overflow:hidden;opacity:0;transition:height .45s cubic-bezier(.2,.8,.2,1),opacity .35s}
-.rk-fold.open{height:auto;opacity:1}
+.rk-fold.is-open{height:auto;opacity:1}
 .rk-morebar{width:100%;height:44px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;font-weight:700;color:var(--sub);background:var(--hover);border-radius:10px;margin:8px 0 2px}
 .rk-morebar:hover{color:var(--fg);background:#ececef}
 .rk-morebar svg{transition:transform .35s}
@@ -1611,6 +1611,10 @@ h1,h2,h3,.fold-body h3,.ccard b,.gcard b,.cd-info h1{word-break:keep-all}
 .tx-t .tx-s{font-size:13px;color:var(--sub);margin-left:-5px}
 .tx-h{row-gap:6px}
 .coinchip{white-space:nowrap}
+.vleg{display:flex;flex-wrap:wrap;gap:4px 14px;margin-bottom:4px;color:var(--sub)}
+.vleg span{display:inline-flex;align-items:center;gap:5px}
+.vleg i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.vleg i.vln{height:3px;width:16px;border-radius:2px;background:var(--brand)}
 </style>
 
 <div class="devbar" role="group" aria-label="기기 미리보기">
@@ -2298,7 +2302,7 @@ function rankTable(e){
         <span class="tn"><b>${won(x.amt)}</b><small class="rk-d">전체의 <em>${pct(x.amt,totAmt)}%</em></small></span>
         <span class="tn"><b>${won(x.net)}</b><small class="rk-d">마진 ${x.amt?pct(x.net,x.amt):0}%</small></span></div>`;
         const top=rows.slice(0,5).map((x,i)=>row(x,i)).join(''), rest=rows.slice(5);
-        return top+(rest.length?`<div class="rk-fold ${r.more?'open':''}" id="rkFold"><div class="rk-fold-in">${rest.map((x,i)=>row(x,i+5)).join('')}</div></div><button class="rk-morebar" data-rkmore="1" aria-expanded="${!!r.more}" aria-controls="rkFold"><span>${r.more?'접기':`${rest.length}개 더 보기`}</span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"/></svg></button>`:''); })()}
+        return top+(rest.length?`<div class="rk-fold ${r.more?'is-open':''}" id="rkFold"><div class="rk-fold-in">${rest.map((x,i)=>row(x,i+5)).join('')}</div></div><button class="rk-morebar" data-rkmore="1" aria-expanded="${!!r.more}" aria-controls="rkFold"><span>${r.more?'접기':`${rest.length}개 더 보기`}</span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"/></svg></button>`:''); })()}
       <div class="rk-r rk-sum" role="row"><span></span><span class="rk-name"><b>합계</b><small>${rows.length}개 ${r.tab==='상품'?'상품':r.tab}</small></span><span class="tn"><small>총 판매</small><b>${rows.reduce((a,x)=>a+x.qty,0)}개</b></span><span class="tn"><small>총 매출</small><b>${won(totAmt)}</b></span><span class="tn"><small>순수익 · 마진 ${pct(totNet,totAmt)}%</small><b class="rk-big">${won(totNet)}</b></span></div>
     </div>
     <p class="tc-cap">상품별 순수익 = 판매금액 − 원가. 할인은 상품별로 나누지 않고 합계 순수익에서만 빼요.${tcost?' 원가는 재고 관리에서 상품마다 입력한 값이에요.':' 이 행사 상품은 원가가 입력되지 않아 원가를 0원으로 계산했어요.'}</p>`
@@ -2319,6 +2323,7 @@ function daily(e){ const ds=evDays(e), r=revenue(e); if(ds.length<2) return ds.m
 const toMin = t => { const [h,m]=t.split(':').map(Number); return h*60+m; };
 const hm = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
 function visitBins(e){ const b={}; (e.visitTimes||[]).forEach(t=>{ const k=Math.floor(toMin(t)/5)*5; b[k]=(b[k]||0)+1; }); return b; }
+function visitLegend(){ return `<span class="vleg"><span><i style="background:#b4b4ba"></i>5분 단위 방문 (왼쪽 눈금)</span><span><i class="vln"></i>시간당 방문 추이 (점의 숫자 = 그 시간 방문 수)</span></span>`; }
 function visitCap(e){ const vt=e.visitTimes||[]; if(!vt.length) return ''; const b=visitBins(e), pk=Object.keys(b).sort((x,y)=>b[y]-b[x]||x-y)[0], H={}; vt.forEach(t=>{const h=+t.split(':')[0]; H[h]=(H[h]||0)+1;}); const ph=Object.keys(H).sort((a,c)=>H[c]-H[a])[0];
   return `방문 기록 ${vt.length}회 · 5분 단위 최다 <b>${hm(+pk)}~${hm(+pk+5)}</b> (${b[pk]}명) · 시간 단위 최다 ${String(ph).padStart(2,'0')}:00대 (${H[ph]}명)`; }
 function visitSvg(e){
@@ -2330,8 +2335,13 @@ function visitSvg(e){
     <line x1="0" x2="${W}" y1="${H-pb}" y2="${H-pb}" stroke="var(--line)"/>
     ${bins.map((m,i)=>{const v=b[m]||0, x=bw*i+bw/2, bh=(H-pt-pb)*v/max, pk=v===pkv&&v>0;
       return `<g class="tc-g" data-tip="${qa(`<b>${hm(m)}~${hm(m+5)}</b><span><i class="k1"></i>방문<em>${v}명</em></span>`)}" tabindex="0"><rect x="${x-bw/2}" y="0" width="${bw}" height="${H}" fill="transparent"/>
-      ${v?`<rect x="${x-w/2}" y="${H-pb-bh}" width="${w}" height="${bh}" rx="1.5" fill="${pk?'var(--brand)':'var(--fg)'}"/>`:''}
+      ${v?`<rect x="${x-w/2}" y="${H-pb-bh}" width="${w}" height="${bh}" rx="1.5" fill="${pk?'var(--fg)':'#b4b4ba'}"/>`:''}
       ${m%60===0?`<line x1="${x-bw/2}" x2="${x-bw/2}" y1="${H-pb}" y2="${H-pb+5}" stroke="var(--line)"/><text x="${x-bw/2}" y="${H-pb+19}" text-anchor="${i===0?'start':'middle'}" font-size="11" fill="var(--sub)">${hm(m)}</text>`:''}</g>`}).join('')}
+    ${(()=>{ const hrsM=[]; for(let m=lo;m<hi;m+=60) hrsM.push(m); const cnt=hrsM.map(m=>bins.filter(x=>x>=m&&x<m+60).reduce((a,x)=>a+(b[x]||0),0)), hmax=Math.max(1,...cnt);
+      const pts=hrsM.map((m,i)=>[(m-lo+30)/5*bw, H-pb-(H-pt-pb)*cnt[i]/hmax]);
+      let d=`M${pts[0][0]},${pts[0][1]}`; for(let i=0;i<pts.length-1;i++){ const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2; d+=` C${p1[0]+(p2[0]-p0[0])/6},${Math.min(H-pb,p1[1]+(p2[1]-p0[1])/6)} ${p2[0]-(p3[0]-p1[0])/6},${Math.min(H-pb,p2[1]-(p3[1]-p1[1])/6)} ${p2[0]},${p2[1]}`; }
+      return `<g class="vtrend" pointer-events="none"><path d="${d}" fill="none" stroke="var(--brand)" stroke-width="2.5" stroke-linecap="round" opacity=".9"/>
+        ${pts.map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="4" fill="var(--bg)" stroke="var(--brand)" stroke-width="2"/><text x="${x}" y="${y-9}" text-anchor="middle" font-size="11" font-weight="800" fill="var(--brand)" stroke="var(--bg)" stroke-width="3" paint-order="stroke">${cnt[i]}명</text>`).join('')}</g>`; })()}
   </svg>`;
 }
 function timeCharts(e){
@@ -2372,7 +2382,7 @@ function timeCharts(e){
     <div class="rk-bar"><div class="rk-tabs" role="group" aria-label="그래프 기준"><button aria-pressed="${ui.tc==='day'}" data-tc="day">일별</button><button aria-pressed="${ui.tc==='hour'}" data-tc="hour">시간대별</button><button aria-pressed="${ui.tc==='visit'}" data-tc="visit">방문 시간대</button></div>
       </div>
     <div class="tc-wrap">${ui.tc==='visit'?visitSvg(e):ui.tc==='hour'?lineSvg():svg}<div class="ttip" hidden></div></div>
-    <p class="tc-cap">${ui.tc==="visit"?visitCap(e):cap}</p></section>`;
+    <p class="tc-cap">${ui.tc==="visit"?visitLegend()+visitCap(e):cap}</p></section>`;
 }
 function catBars(e){
   const rows=rankRows(e,'카테고리').sort((a,b)=>b.amt-a.amt), tot=rows.reduce((a,x)=>a+x.amt,0)||1, qty=rows.reduce((a,x)=>a+x.qty,0);
@@ -2473,7 +2483,7 @@ function retroBlock(e){
     <ul class="retro">${e.retros.map((r,k)=>`<li><span class="rt-av">나</span><div><small class="tn">${r.at}</small><p>${r.t}</p></div><button class="rt-x" data-rtrm="${k}" aria-label="회고 지우기">×</button></li>`).join('')}</ul>
     <form id="rvForm" class="rvf"><textarea id="rvIn" rows="1" placeholder="오늘 어땠는지 한 줄 남기기" aria-label="회고 남기기"></textarea><button class="btn btn-blk btn-sm">남기기</button></form></section>`;
 }
-const txTime = at => { const [d,t]=at.split(' '), [y,m,dd]=d.split('-').map(Number), wd=WD[new Date(y,m-1,dd).getDay()], [hh,mi,ss]=(t||'').split(':'); return `<time class="tx-t tn" datetime="${d}T${t}"><span class="tx-d">${m}월 ${dd}일 (${wd})</span><b>${hh}:${mi}</b><span class="tx-s">:${ss||'00'}</span></time>`; };
+const txTime = at => { const [d,t]=at.split(' '), [y,m,dd]=d.split('-').map(Number), wd=WD[new Date(y,m-1,dd).getDay()], [hh,mi,ss]=(t||'').split(':'); return `<time class="tx-t tn" datetime="${d}T${t}"><span class="tx-d">${m}월 ${dd}일 (${wd})</span><b>${hh}:${mi}:${ss||'00'}</b></time>`; };
 function txList(e){
   const ss=e.sales.slice().sort((a,b)=>saleAt(e,b).localeCompare(saleAt(e,a))), shown=ss;
   if(!ss.length) return `<section class="ovs"><h3>결제 내역</h3><p class="nodata">${e.noTime?`개별 결제 기록이 없는 행사예요. 결제 ${orders(e)}건의 결제수단별 합계만 남아 있어요.`:Object.keys(e.base).length?'예시 행사라 개별 결제 대신 합계만 보관돼요.':'결제 기록이 없어요.'}</p></section>`;
@@ -2954,7 +2964,7 @@ document.addEventListener('click',ev=>{
   if(d.txmore){ ui.txMore=!ui.txMore; route(); return; }
   if(d.tc){ ui.tc=d.tc; route(); return; }
   if(d.rktab){ ui.rk.tab=d.rktab; ui.rk.more=false; route(); return; }
-  if(d.rkmore){ ui.rk.more=!ui.rk.more; const f=$('#rkFold'); if(f){ const h=f.querySelector('.rk-fold-in').scrollHeight; if(ui.rk.more){ f.classList.add('open'); f.style.height='0px'; requestAnimationFrame(()=>{ f.style.height=h+'px'; }); setTimeout(()=>{ if(ui.rk.more) f.style.height=''; },480); } else { f.style.height=h+'px'; requestAnimationFrame(()=>{ f.classList.remove('open'); f.style.height='0px'; }); setTimeout(()=>{ f.style.height=''; },480); } b.setAttribute('aria-expanded',String(ui.rk.more)); const n=f.querySelectorAll('.rk-r').length; b.querySelector('span').textContent=ui.rk.more?'접기':`${n}개 더 보기`; if(!ui.rk.more) setTimeout(()=>b.scrollIntoView({block:'nearest',behavior:'smooth'}),300); } else route(); return; }
+  if(d.rkmore){ ui.rk.more=!ui.rk.more; const f=$('#rkFold'); if(f){ const h=f.querySelector('.rk-fold-in').scrollHeight; if(ui.rk.more){ f.classList.add('is-open'); f.style.height='0px'; requestAnimationFrame(()=>{ f.style.height=h+'px'; }); setTimeout(()=>{ if(ui.rk.more) f.style.height=''; },480); } else { f.style.height=h+'px'; requestAnimationFrame(()=>{ f.classList.remove('is-open'); f.style.height='0px'; }); setTimeout(()=>{ f.style.height=''; },480); } b.setAttribute('aria-expanded',String(ui.rk.more)); const n=f.querySelectorAll('.rk-r').length; b.querySelector('span').textContent=ui.rk.more?'접기':`${n}개 더 보기`; if(!ui.rk.more) setTimeout(()=>b.scrollIntoView({block:'nearest',behavior:'smooth'}),300); } else route(); return; }
   else if(d.popt){ const l=ui.lines.find(x=>x.id===ui.selLine); if(l){ const i=l.opts.indexOf(d.popt); i<0?l.opts.push(d.popt):l.opts.splice(i,1); route(); } }
   else if(d.ptab){ ui.ptab=d.ptab; route(); }
   else if(d.otype){ ui.otype=d.otype; route(); }
