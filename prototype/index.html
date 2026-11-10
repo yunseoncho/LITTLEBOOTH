@@ -2448,7 +2448,7 @@ function timeCharts(e){
   return `<section class="ovs"><h3>${ui.tc==='day'?'일별 매출':ui.tc==='hour'?'시간대별 매출':'시간대별 방문'}</h3>
     <div class="rk-bar"><div class="rk-tabs" role="group" aria-label="그래프 기준"><button aria-pressed="${ui.tc==='day'}" data-tc="day">일별</button><button aria-pressed="${ui.tc==='hour'}" data-tc="hour">시간대별</button><button aria-pressed="${ui.tc==='visit'}" data-tc="visit">방문 시간대</button></div>
       </div>
-    <div class="tc-wrap">${ui.tc==='visit'?visitSvg(e):ui.tc==='hour'?lineSvg():svg}<div class="ttip" hidden></div></div>
+    <div class="tc-wrap" id="tcWrap">${ui.tc==='visit'?visitSvg(e):ui.tc==='hour'?lineSvg():svg}<div class="ttip" hidden></div></div>
     <p class="tc-cap">${ui.tc==="visit"?visitLegend()+visitCap(e):cap}</p></section>`;
 }
 function catBars(e){
@@ -2623,12 +2623,12 @@ function records(){
     <div class="sec-h" style="margin-top:36px">행사 하이라이트</div>
     <ul class="news">
       ${(()=>{ const best=done.reduce((x,y)=>revenue(y)>revenue(x)?y:x), avg=totalRev/done.length, tp=P(top[0]), te=done.find(e=>tally(e)[top[0]])||best;
-        const busy=(()=>{ const H={}; done.forEach(e=>{ const h=hourly(e); for(const k in h) H[k]=(H[k]||0)+h[k]; }); const k=Object.keys(H).sort((a,b)=>H[b]-H[a])[0]; return k; })();
+        const timed=done.filter(e=>!e.noTime&&(e.sales.length||Object.keys(e.base).length)); let busy=null, tev=null, bv=-1; timed.forEach(e=>{ const h=hourly(e); for(const k in h) if(h[k]>bv){ bv=h[k]; busy=k; tev=e; } });
         const pm={}; done.forEach(e=>{ const m=payMix(e); for(const k in m) pm[k]=(pm[k]||0)+m[k].amt; }); const pk=Object.entries(pm).sort((a,b)=>b[1]-a[1])[0], pt=Object.values(pm).reduce((a,b)=>a+b,0)||1;
         return [
           tip('#event-'+te.id,'재고','#d6336c',`${prod(tp.name)}이 매출의 ${num(share+'%','pink')}`,`가장 많이 번 상품이에요. 다음 행사 반입 수량을 먼저 챙기세요.`,`2|[data-pid=${tp.id}]|매출 1위 ${tp.name}`),
           tip('#event-'+best.id,'최고 매출','var(--live)',`${place(best.title)} ${num(won(revenue(best)),'up')}`,`평균보다 ${num((avg?Math.round((revenue(best)/avg-1)*100):0)+'%')} 높았어요. 같은 행사가 다시 열리면 우선 신청하세요.`,'2|[data-k=rev]|최고 매출 행사'),
-          tip('#event-'+best.id,'결제','#2f63d6',`${pk?pk[0]:'카드'} 결제가 ${num(pk?Math.round(pk[1]/pt*100)+'%':'—')}`,`가장 바쁜 시간은 ${num((busy||'13')+':00')}대예요. 이 시간엔 결제 담당을 한 명 더 두세요.`,'2|.tc-wrap|시간대별 매출'),
+          tev?tip('#event-'+tev.id,'시간대','#2f63d6',`${place(tev.title)} 가장 바쁜 시간 ${num(String(busy).padStart(2,'0')+':00')}`,`${pk?`${pk[0]} 결제가 ${num(Math.round(pk[1]/pt*100)+'%')}로 가장 많았어요. `:''}이 시간대엔 결제 담당을 한 명 더 두세요.`,`2|#tcWrap|${String(busy).padStart(2,'0')}:00대 매출 ${won(bv)}`):'',
         ].join(''); })()}
     </ul>
     <div class="lock" style="margin-top:26px"><b>요일·시간대 분석과 PC 관리 오피스는 Plus에서</b><p>기본 통계는 계속 무료예요.</p><a class="btn btn-blue btn-sm" href="#plus">Plus 알아보기</a></div>
@@ -2638,6 +2638,8 @@ function records(){
 /* ---------- 재고 관리 ---------- */
 function stock(){
   const f=ui.inv;
+  /* 다른 필터(소유·상태·소유자 등)에 해당 상품이 있는 값만 보여줌 */
+  const facet=k=>{ const sv=f[k]; f[k]='전체'; const vals=[...new Set(invList().map(p=>p[k]))]; f[k]=sv; if(sv!=='전체'&&!vals.includes(sv)) vals.unshift(sv); return k==='cat'?CATS.filter(c=>vals.includes(c)).concat(vals.filter(v=>!CATS.includes(v))):vals; };
   let list=invList();
   const me=meNames(), base=invList(false), stc=k=>base.filter(p=>pStatus(p)===k).length, ownAll=products.filter(p=>(f.cat==='전체'||p.cat===f.cat)&&nameMatch(p,f.q.trim()));
   const SORT={'최신 순':(a,b)=>b.created-a.created,'이름 순':(a,b)=>a.name.localeCompare(b.name,'ko'),'가격 높은 순':(a,b)=>b.price-a.price,'재고 적은 순':(a,b)=>a.stock-b.stock,'직접 정렬':()=>0};
@@ -2659,9 +2661,9 @@ function stock(){
     <div class="stchips" role="group" aria-label="상태">${['active','soldout','returned','disposed','deleted'].map(k=>`<button aria-pressed="${(f.st||'active')===k}" data-st="${k}" class="st-${k}">${ST_LABEL[k]} <span class="tn">${stc(k)}</span></button>`).join('')}${(f.st||'active')!=='active'?`<small>${(f.st||'active')==='soldout'?'재고가 0이 되면 자동으로 와요':'정리된 상품도 지난 판매·정산 기록엔 남아요'}</small>`:''}</div>
 
     <div class="itools">
-      <label class="fsel ${f.cat!=='전체'?'on':''}">카테고리<select data-icatsel="1">${['전체',...CATS].map(c=>`<option ${f.cat===c?'selected':''}>${c}</option>`).join('')}</select></label>
+      <label class="fsel ${f.cat!=='전체'?'on':''}">카테고리<select data-icatsel="1">${['전체',...facet('cat')].map(c=>`<option ${f.cat===c?'selected':''}>${c}</option>`).join('')}</select></label>
       <label class="fsel ${f.owner!=='전체'?'on':''}">소유자<select data-fsel="inv|owner">${['전체',...uniq('owner')].map(v=>`<option ${f.owner===v?'selected':''}>${v}</option>`).join('')}</select></label>
-      <label class="fsel ${f.genre!=='전체'?'on':''}">장르<select data-fsel="inv|genre">${['전체',...uniq('genre')].map(v=>`<option ${f.genre===v?'selected':''}>${v}</option>`).join('')}</select></label>
+      <label class="fsel ${f.genre!=='전체'?'on':''}">장르<select data-fsel="inv|genre">${['전체',...facet('genre')].map(v=>`<option ${f.genre===v?'selected':''}>${v}</option>`).join('')}</select></label>
       ${act?'<button class="tbtn" data-freset="inv">초기화</button>':''}
       <span style="flex:1"></span>
       <label class="fsel">정렬<select data-isort ${f.reorder?'disabled':''}>${['최신 순','이름 순','가격 높은 순','재고 적은 순'].map(o=>`<option ${f.sort===o?'selected':''}>${o}</option>`).join('')}</select></label>
@@ -2945,7 +2947,7 @@ document.addEventListener('click',ev=>{
   if(d.rpopen){ ui.rpOpen=!ui.rpOpen; route(); return; }
   if(d.rpk){ ui.rp.k=d.rpk; ui.rpOpen=false; route(); return; }
   if(ui.rpOpen && !b.closest('.rpick')){ ui.rpOpen=false; route(); }
-  if(d.spot){ const [tab,sel,label]=d.spot.split('|'); ui.tab[b.getAttribute('href').slice(7)]=+tab; ui.spot={sel,label}; }
+  if(d.spot){ const [tab,sel,label]=d.spot.split('|'); if(sel.includes('data-pid')) ui.rk={tab:'상품',sort:'amt',more:true}; if(sel==='#tcWrap') ui.tc='hour'; ui.tab[b.getAttribute('href').slice(7)]=+tab; ui.spot={sel,label}; }
   if(d.new){ ui.wiz=newWizard(); suggestQty(ui.wiz); route(); return; }
   if(d.pnew){ ui.modal='new'; ui.pd=blankPD(); ui.newCat=ui.newOpt=false; route(); return; }
   if(d.pedit){ const p=P(d.pedit); ui.modal=d.pedit; ui.pd={...blankPD(),...p,opts:[...p.opts],price:String(p.price),cost:p.cost?String(p.cost):''}; ui.newCat=ui.newOpt=false; route(); return; }
