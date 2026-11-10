@@ -1622,6 +1622,17 @@ h1,h2,h3,.fold-body h3,.ccard b,.gcard b,.cd-info h1{word-break:keep-all}
 .split .split-arrow svg{transition:transform .2s}
 .split .split-arrow[aria-expanded="true"] svg{transform:rotate(180deg)}
 .frame[data-device="mobile"] .split .more-m{left:0;right:auto}
+.thn{cursor:default;text-decoration:underline dotted #c4c4ca;text-underline-offset:3px}
+.thn:hover{text-decoration-color:var(--fg)}
+.thpop{position:absolute;z-index:120;width:180px;background:var(--bg);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.14);padding:8px 8px 10px;display:flex;flex-direction:column;gap:2px;pointer-events:none}
+.thpop[hidden]{display:none}
+.thpop-img{width:100%;aspect-ratio:1;border-radius:10px;background:var(--hover);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;overflow:hidden;margin-bottom:6px;color:#2a2a2f}
+.thpop-img img{width:100%;height:100%;object-fit:cover}
+.thpop-img svg{width:40%;height:40%}
+.thpop-img small{font-size:11px;color:var(--muted)}
+.thpop b{font-size:13px;line-height:1.35}.thpop b em{font-style:normal;color:var(--muted);font-weight:600}
+.thpop>small{font-size:12px;color:var(--sub)}
+.thpop .thpop-n{font-size:11px;color:var(--muted)}
 </style>
 
 <div class="devbar" role="group" aria-label="기기 미리보기">
@@ -1671,6 +1682,7 @@ h1,h2,h3,.fold-body h3,.ccard b,.gcard b,.cd-info h1{word-break:keep-all}
   <a href="#stock" data-nav="stock"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="5" width="16" height="5" rx="1"/><path d="M5 10v9h14v-9M10 14h4"/></svg>재고</a>
 </nav>
 <button class="totop" id="toTop" aria-label="맨 위로" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 14 6-6 6 6"/></svg><span>TOP</span></button>
+<div class="thpop" id="thpop" hidden></div>
 <div class="toast" id="toast" role="status"></div>
 </div>
 
@@ -2307,7 +2319,7 @@ function rankTable(e){
       <div class="rk-h" role="row"><span>순위</span><span>${r.tab==='상품'?'상품명':r.tab}</span><span>판매개수</span><span>판매금액</span><span title="판매금액에서 원가와 할인을 뺀 금액">순수익</span></div>
       ${(()=>{ const row=(x,i)=>`<div class="rk-r" role="row" ${r.tab==='상품'?`data-pid="${x.key}"`:''}>
         <span class="rk-n tn ${i===0?'top':''}">${i+1}</span>
-        <span class="rk-name"><b>${x.name}</b><small>${x.sub}</small></span>
+        <span class="rk-name"><b ${r.tab==='상품'?`class="thn" data-thumb="${x.key}"`:''}>${x.name}</b><small>${x.sub}</small></span>
         <span class="tn"><b>${x.qty}개</b>${x.stock?`<small class="rk-d">반입 ${x.stock}개 중 <em>${pct(x.qty,x.stock)}%</em></small>`:'<small class="rk-d">재고 없는 옵션</small>'}</span>
         <span class="tn"><b>${won(x.amt)}</b><small class="rk-d">전체의 <em>${pct(x.amt,totAmt)}%</em></small></span>
         <span class="tn"><b>${won(x.net)}</b><small class="rk-d">마진 ${x.amt?pct(x.net,x.amt):0}%</small></span></div>`;
@@ -2416,9 +2428,9 @@ function ownerModal(){
     <div class="om-sum"><div><small>판매 금액</small><b class="tn">${won(ta)}</b></div><div><small>판매 개수</small><b class="tn">${tq}개</b></div><div><small>상품</small><b class="tn">${its.length||sum.length}종</b></div></div>
     <div class="rk-tabs om-tabs" role="tablist"><button role="tab" aria-selected="${tab==='time'}" aria-pressed="${tab==='time'}" data-omtab="time">판매 내역</button><button role="tab" aria-selected="${tab==='sum'}" aria-pressed="${tab==='sum'}" data-omtab="sum">상품별 합계</button></div>
     <div class="om-body">${tab==='time'
-      ? (rows.length?`<ul class="om-l">${rows.map(r=>`<li><time class="tn">${(([d,t])=>{const [,m,dd]=d.split('-');return `${+m}. ${+dd}. ${t}`;})(r.at.split(' '))}</time><span>${r.p.code?`<em class="tn">${r.p.code}</em>`:''}${r.p.name}</span><span class="tn">×${r.q}</span><span class="tn">${won(r.p.price*r.q)}</span></li>`).join('')}</ul>`
+      ? (rows.length?`<ul class="om-l">${rows.map(r=>`<li><time class="tn">${(([d,t])=>{const [,m,dd]=d.split('-');return `${+m}. ${+dd}. ${t}`;})(r.at.split(' '))}</time><span class="thn" data-thumb="${r.p.id}">${r.p.code?`<em class="tn">${r.p.code}</em>`:''}${r.p.name}</span><span class="tn">×${r.q}</span><span class="tn">${won(r.p.price*r.q)}</span></li>`).join('')}</ul>`
          :`<p class="om-empty">${e.noTime?'이 행사는 결제별 시각 기록이 없어요. [상품별 합계]에서 판매량을 확인하세요.':Object.keys(e.base).length?'예시 행사라 시간별 판매 내역 대신 합계만 있어요. [상품별 합계]에서 확인하세요.':'아직 판매된 상품이 없어요.'}</p>`)
-      : `<ul class="om-l sum">${(its.length?its.map(i=>({p:P(i.id),q:t[i.id]||0,b:i.q})):sum.map(x=>({...x,b:null}))).filter(x=>x.p).sort((a,b)=>b.p.price*b.q-a.p.price*a.q).map(x=>`<li class="${x.q?'':'zero'}"><span>${x.p.code?`<em class="tn">${x.p.code}</em>`:''}${x.p.name}</span><span class="tn">${x.q}개${x.b!=null?` / ${x.b}`:''}</span><span class="tn">${won(x.p.price*x.q)}</span></li>`).join('')}
+      : `<ul class="om-l sum">${(its.length?its.map(i=>({p:P(i.id),q:t[i.id]||0,b:i.q})):sum.map(x=>({...x,b:null}))).filter(x=>x.p).sort((a,b)=>b.p.price*b.q-a.p.price*a.q).map(x=>`<li class="${x.q?'':'zero'}"><span class="thn" data-thumb="${x.p.id}">${x.p.code?`<em class="tn">${x.p.code}</em>`:''}${x.p.name}</span><span class="tn">${x.q}개${x.b!=null?` / ${x.b}`:''}</span><span class="tn">${won(x.p.price*x.q)}</span></li>`).join('')}
          <li class="tot"><span>합계</span><span class="tn">${tq}개</span><span class="tn">${won(ta)}</span></li></ul>`}</div>
   </section>`;
 }
@@ -2499,7 +2511,7 @@ function txList(e){
   if(!ss.length) return `<section class="ovs"><h3>결제 내역</h3><p class="nodata">${e.noTime?`개별 결제 기록이 없는 행사예요. 결제 ${orders(e)}건의 결제수단별 합계만 남아 있어요.`:Object.keys(e.base).length?'예시 행사라 개별 결제 대신 합계만 보관돼요.':'결제 기록이 없어요.'}</p></section>`;
   return `<section class="ovs"><h3>결제 내역 <span class="ov-n" style="font-weight:500">${ss.length}건</span> ${csvBtn(e,'tx','결제 내역')}</h3>
     <ul class="txl">${shown.map(x=>`<li><div class="tx-h">${txTime(saleAt(e,x))}<span class="tx-pay">${x.pay}</span>${x.note?`<span class="tx-note">${x.note}</span>`:''}<b class="tn">${won(x.total)}</b></div>
-      <ul class="tx-items">${x.items.map(i=>{const p=P(i.id)||{name:i.id,price:0};return `<li><span>${p.code?`<em class="tn">${p.code}</em>`:''}${p.name} <small>${p.owner||''}</small></span><span class="tn">${won(p.price)} × ${i.q}</span><span class="tn">${won(p.price*i.q)}</span></li>`}).join('')}
+      <ul class="tx-items">${x.items.map(i=>{const p=P(i.id)||{name:i.id,price:0};return `<li><span><span class="thn" data-thumb="${i.id}">${p.code?`<em class="tn">${p.code}</em>`:''}${p.name}</span> <small>${p.owner||''}</small></span><span class="tn">${won(p.price)} × ${i.q}</span><span class="tn">${won(p.price*i.q)}</span></li>`}).join('')}
       ${x.discount?`<li class="tx-disc"><span>할인</span><span></span><span class="tn">−${won(x.discount)}</span></li>`:''}</ul></li>`).join('')}</ul>
     </section>`;
 }
@@ -3066,6 +3078,13 @@ document.addEventListener('submit',ev=>{ ev.preventDefault();
  if(ev.target.id==='tkForm'){ const i=$('#tkIn'), id=location.hash.slice(6); if(i.value.trim()) talkSend(id, i.value.trim(), false); return; } const i=$('#memoIn'), e=curEvent(); if(i&&i.value.trim()&&e){ e.notes.push({at:nowKST(),k:'기록',t:i.value.trim()}); ui.memoOpen=false; route(); toast('메모를 남겼어요'); } });
 $('#scrim').addEventListener('click',()=>frame.classList.remove('drawer'));
 $('#sheetScrim').addEventListener('click',()=>frame.classList.remove('sheet'));
+function thumbPop(ev){ const el=ev.target.closest&&ev.target.closest('[data-thumb]'), box=$('#thpop'); if(!box) return;
+  if(!el){ box.hidden=true; return; } const p=P(el.dataset.thumb); if(!p){ box.hidden=true; return; }
+  box.innerHTML=`<span class="thpop-img">${p.photo?`<img src="${p.photo}" alt="${qa(p.name)}">`:(ic[p.ic]||'')+'<small>사진 없음</small>'}</span><b>${p.code?`<em>${p.code}</em> `:''}${p.name}</b><small>${won(p.price)} · ${p.owner}</small>${p.photo?'':'<small class="thpop-n">재고 관리에서 사진을 올리면 여기 보여요</small>'}`;
+  box.hidden=false; const fr=frame.getBoundingClientRect(), r=el.getBoundingClientRect(); let x=r.left-fr.left, y=r.bottom-fr.top+8; const bw=box.offsetWidth, bh=box.offsetHeight;
+  if(x+bw>fr.width-8) x=fr.width-bw-8; if(y+bh>fr.height-8) y=r.top-fr.top-bh-8; box.style.left=Math.max(8,x)+'px'; box.style.top=y+'px'; }
+document.addEventListener('mouseover',thumbPop); document.addEventListener('focusin',thumbPop);
+document.addEventListener('scroll',()=>{ const b=$('#thpop'); if(b) b.hidden=true; },true);
 function tcTip(ev){ const g=ev.target.closest&&ev.target.closest('.tc-g'); const wrap=ev.target.closest&&ev.target.closest('.tc-wrap'); document.querySelectorAll('.tc-wrap .ttip').forEach(t=>{ if(!wrap||t.parentNode!==wrap) t.hidden=true; });
   if(!g||!wrap) return; const t=wrap.querySelector('.ttip'); t.innerHTML=g.dataset.tip; t.hidden=false; const wr=wrap.getBoundingClientRect(), gr=g.getBoundingClientRect(); let x=gr.left-wr.left+gr.width/2+12; if(x+t.offsetWidth>wr.width) x=gr.left-wr.left+gr.width/2-12-t.offsetWidth; t.style.left=Math.max(0,x)+'px'; t.style.top=g.classList.contains('cseg')?(gr.bottom-wr.top+8)+'px':'4px'; if(g.classList.contains('cseg')){ let l=gr.left-wr.left+gr.width/2-t.offsetWidth/2; t.style.left=Math.max(0,Math.min(wr.width-t.offsetWidth,l))+'px'; } }
 document.addEventListener('mouseover',tcTip); document.addEventListener('focusin',tcTip); document.addEventListener('click',e=>{ if(e.target.closest&&e.target.closest('.tc-g')) tcTip(e); });
