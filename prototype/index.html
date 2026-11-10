@@ -2253,7 +2253,12 @@ async function reviewExcel(e){
   const s4=wb.addWorksheet('판매 기록',{views:[{state:'frozen',ySplit:2}]}); widths(s4,[11,20,11,9,28,12,22,10,7,11,10,13,24]);
   s4.getCell('A1').value='판매 기록 (결제 시각순)'; s4.getCell('A1').font={bold:true,size:13};
   const tx=csvRows(e,'tx');
-  if(tx.length>1){ table(s4,2,tx,{money:[7,9,10,11],int:[8],text:[0,3]}); s4.autoFilter={from:{row:2,column:1},to:{row:2,column:tx[0].length}}; }
+  if(tx.length>1){ table(s4,2,tx,{money:[7,9,10,11],int:[8],text:[0,3]}); s4.autoFilter={from:{row:2,column:1},to:{row:2,column:tx[0].length}};
+    /* 콜아웃: 결제일시(B), 주문 결제금액(L) 열 노란색 */
+    [2,12].forEach(col=>{ for(let rr=2; rr<=tx.length+1; rr++){ const c=s4.getCell(rr,col);
+      if(rr===2){ c.fill=fill('FFFFD54F'); c.font={bold:true,color:{argb:BLK}}; }
+      else { c.fill=fill('FFFFF6CC'); if(c.value!=null&&c.value!=='') c.font={bold:true,color:{argb:BLK}}; } } });
+    s4.getColumn(2).width=21; s4.getColumn(12).width=15; }
   else { const c=s4.getCell('A3'); c.value=e.noTime?`개별 결제 기록이 없는 행사예요. 결제 ${o}건의 결제수단별 합계만 남아 있어요.`:'결제 기록이 없어요.'; c.font={color:{argb:SUB}}; }
   const buf=await wb.xlsx.writeBuffer();
   await saveFile(`${fileBase(e)}_결과회고.xlsx`, new Blob([buf]));
