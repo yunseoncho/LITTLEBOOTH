@@ -7,3 +7,5 @@ build/
 .firebase/
 *.log
 serviceAccount*.json
+# Supabase 원본 내보내기(개인 데이터)는 커밋하지 않음
+tools/seed/ws_state*.json
