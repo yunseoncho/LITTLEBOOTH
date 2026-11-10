@@ -1670,6 +1670,15 @@ select option{color:#111;background:#fff}
 .inv .icol{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;justify-self:center}
 .inv .itools{gap:6px;margin-top:12px}
 .inv .stchips{margin-top:14px}
+/* 스크롤바: 얇고 은은하게 */
+*{scrollbar-width:thin;scrollbar-color:rgba(17,17,17,.18) transparent}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:rgba(17,17,17,.16);border-radius:999px;border:3px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background:rgba(17,17,17,.34);background-clip:padding-box;border:2px solid transparent}
+*::-webkit-scrollbar-corner{background:transparent}
+.tk *::-webkit-scrollbar-thumb,.tk::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);background-clip:padding-box}
+.tk *{scrollbar-color:rgba(255,255,255,.2) transparent}
 </style>
 
 <div class="devbar" role="group" aria-label="기기 미리보기">
