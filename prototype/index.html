@@ -1615,6 +1615,13 @@ h1,h2,h3,.fold-body h3,.ccard b,.gcard b,.cd-info h1{word-break:keep-all}
 .vleg span{display:inline-flex;align-items:center;gap:5px}
 .vleg i{width:10px;height:10px;border-radius:2px;display:inline-block}
 .vleg i.vln{height:3px;width:16px;border-radius:2px;background:var(--brand)}
+.split{display:inline-flex}
+.split .split-main{border-top-right-radius:0!important;border-bottom-right-radius:0!important;border-right-width:0!important}
+.split .split-arrow{width:38px;padding:0!important;justify-content:center;border-top-left-radius:0!important;border-bottom-left-radius:0!important;position:relative}
+.split .split-arrow::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:1px;background:var(--line)}
+.split .split-arrow svg{transition:transform .2s}
+.split .split-arrow[aria-expanded="true"] svg{transform:rotate(180deg)}
+.frame[data-device="mobile"] .split .more-m{left:0;right:auto}
 </style>
 
 <div class="devbar" role="group" aria-label="기기 미리보기">
@@ -2583,7 +2590,7 @@ function stock(){
   return `<div class="page wide inv"><main>
     <div class="ih"><h1>상품</h1>
       <label class="sbox isearch">${SEARCH_IC}<input id="q-inv" data-q="inv" value="${qa(f.q)}" placeholder="상품명 또는 초성 검색" autocomplete="off"></label>
-      <div class="ih-r"><button class="btn btn-out" data-toast="엑셀 업로드 자리 (양식에 맞춰 채운 파일을 올려요)">엑셀 업로드</button><span class="more-w"><button class="btn btn-out more-b" data-xlmore="1" aria-haspopup="menu" aria-expanded="${!!ui.xlMore}" aria-label="엑셀 더보기">⋯</button>${ui.xlMore?`<span class="more-m" role="menu"><button role="menuitem" data-xl="tpl"><b>양식 내려받기</b><small>${ui.inv.cat!=='전체'?`'${ui.inv.cat}' 카테고리로 채운 `:''}등록용 빈 양식</small></button><button role="menuitem" data-xl="exp"><b>엑셀 내려받기</b><small>지금 보이는 목록을 엑셀로</small></button></span>`:''}</span><button class="btn btn-blk" data-pnew="1">+ 상품 추가</button></div></div>
+      <div class="ih-r"><span class="more-w split"><button class="btn btn-out split-main" data-toast="엑셀 업로드 자리 (양식에 맞춰 채운 파일을 올려요)">엑셀 업로드</button><button class="btn btn-out split-arrow" data-xlmore="1" aria-haspopup="menu" aria-expanded="${!!ui.xlMore}" aria-label="엑셀 메뉴 열기"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></button>${ui.xlMore?`<span class="more-m" role="menu"><button role="menuitem" data-xl="tpl"><b>양식 내려받기</b><small>${ui.inv.cat!=='전체'?`'${ui.inv.cat}' 카테고리로 채운 `:''}등록용 빈 양식</small></button><button role="menuitem" data-xl="exp"><b>엑셀 내려받기</b><small>지금 보이는 목록을 엑셀로</small></button></span>`:''}</span><button class="btn btn-blk" data-pnew="1">+ 상품 추가</button></div></div>
     <div class="chips ctab2" role="group" aria-label="카테고리">${['전체',...CATS].map(c=>`<button class="chip" aria-pressed="${f.cat===c}" data-icat="${c}">${c}</button>`).join('')}</div>
     <div class="itools">
       <select data-isort aria-label="정렬" ${f.reorder?'disabled':''}>${['최신 순','이름 순','가격 높은 순','재고 적은 순'].map(o=>`<option ${f.sort===o?'selected':''}>${o}</option>`).join('')}</select>
