@@ -1639,7 +1639,8 @@ h1,h2,h3,.fold-body h3,.ccard b,.gcard b,.cd-info h1{word-break:keep-all}
 .owntabs [role=tab][disabled]{opacity:.45;cursor:not-allowed}
 .owntabs [role=tab] span{font-size:12px;color:var(--muted);font-weight:600}
 .mesel{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--sub);padding-bottom:6px}
-.mesel select{height:30px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:12px;padding:0 6px;background:var(--bg)}
+.mesel select{height:32px;min-width:120px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;font-weight:600;padding:0 8px;background:#fff;color:#111;-webkit-text-fill-color:#111}
+.mesel.need select{border-color:var(--brand)}
 .mesel b{font-size:13px;color:var(--fg)}
 .mesel.need{color:var(--brand);font-weight:700}
 .stchips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:12px}
@@ -1657,6 +1658,8 @@ h1,h2,h3,.fold-body h3,.ccard b,.gcard b,.cd-info h1{word-break:keep-all}
 .inv .ctab2{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-right:-4px;padding-bottom:2px;-webkit-mask-image:linear-gradient(90deg,#000 92%,transparent)}
 .inv .ctab2::-webkit-scrollbar{display:none}
 .inv .ctab2 .chip{flex:none}
+select{color-scheme:light}
+select option{color:#111;background:#fff}
 </style>
 
 <div class="devbar" role="group" aria-label="기기 미리보기">
