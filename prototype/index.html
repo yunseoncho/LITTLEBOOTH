@@ -2619,7 +2619,7 @@ function stock(){
     ${f.confirmDel?`<div class="confirmdel"><span>선택한 상품 ${nsel}개를 삭제할까요? 지난 판매 기록은 남아요.</span><button class="btn btn-sm btn-blk" data-bulk="delyes">삭제</button><button class="btn btn-sm btn-gray" data-bulk="delno">취소</button></div>`:''}
     <div class="itbl" style="--cols:${cols}">
       <style>.frame[data-device="mobile"] .itbl{--cols:${mcols}!important}</style>
-      <div class="ithead">${f.select?`<input type="checkbox" data-selall aria-label="전체 선택" ${shown.length&&shown.every(p=>f.sel[p.id])?'checked':''}>`:''}<span>상품(총 ${list.length}개)</span><span>소유자</span><span>장르</span><span>재고</span>${f.reorder?'<span>순서</span>':''}</div>
+      <div class="ithead">${f.select?`<input type="checkbox" data-selall aria-label="전체 선택" ${shown.length&&shown.every(p=>f.sel[p.id])?'checked':''}>`:''}<span>상품(총 ${list.length}개)</span><span>소유자</span><span>장르</span><span>남은재고</span>${f.reorder?'<span>순서</span>':''}</div>
       ${shown.map(p=>`<div class="irow">
         ${f.select?`<input type="checkbox" data-sel="${p.id}" ${f.sel[p.id]?'checked':''} aria-label="${qa(p.name)} 선택">`:''}
         <button class="icell" data-pedit="${p.id}">${thumb(p)}<span class="in"><span class="nm">${p.name}${p.tag!=='없음'?`<em class="ptag">${p.tag}</em>`:''}</span><span class="pr tn">${price(p)}</span><small class="tn">${p.owner} · ${p.genre} · ${p.cat} · 재고 ${p.stock}</small></span></button>
