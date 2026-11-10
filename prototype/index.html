@@ -1660,6 +1660,16 @@ h1,h2,h3,.fold-body h3,.ccard b,.gcard b,.cd-info h1{word-break:keep-all}
 .inv .ctab2 .chip{flex:none}
 select{color-scheme:light}
 select option{color:#111;background:#fff}
+.mesel{position:relative}
+.mesel select{position:relative}
+.mesel.set select{position:absolute;inset:0;opacity:0;cursor:pointer;min-width:0;width:100%}
+.mesel.set .chg{font-size:12px;color:var(--muted);text-decoration:underline;margin-left:2px}
+.mesel.need{font-size:12px}
+.m-only{display:none}
+.frame[data-device="mobile"] .m-only{display:inline}
+.inv .icol{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;justify-self:center}
+.inv .itools{gap:6px;margin-top:12px}
+.inv .stchips{margin-top:14px}
 </style>
 
 <div class="devbar" role="group" aria-label="기기 미리보기">
@@ -2633,8 +2643,8 @@ function stock(){
   const SORT={'최신 순':(a,b)=>b.created-a.created,'이름 순':(a,b)=>a.name.localeCompare(b.name,'ko'),'가격 높은 순':(a,b)=>b.price-a.price,'재고 적은 순':(a,b)=>a.stock-b.stock,'직접 정렬':()=>0};
   list=list.slice().sort(SORT[f.reorder?'직접 정렬':f.sort]);
   const pages=Math.max(1,Math.ceil(list.length/f.per)); f.page=Math.min(Math.max(1,f.page),pages);
-  const shown=list.slice((f.page-1)*f.per,f.page*f.per), act=['owner','genre'].filter(k=>f[k]!=='전체').length, nsel=Object.values(f.sel).filter(Boolean).length;
-  const cols=(f.select?'24px ':'')+'minmax(0,1fr) 110px 110px 90px'+(f.reorder?' 72px':'');
+  const shown=list.slice((f.page-1)*f.per,f.page*f.per), act=['owner','genre','cat'].filter(k=>f[k]!=='전체').length, nsel=Object.values(f.sel).filter(Boolean).length;
+  const cols=(f.select?'24px ':'')+'minmax(0,1fr) 160px 110px 90px'+(f.reorder?' 72px':'');
   const mcols=(f.select?'24px ':'')+'minmax(0,1fr) 52px'+(f.reorder?' 64px':'');
   const thumb=p=>p.photo?`<span class="pthumb"><img src="${p.photo}" alt="" style="width:100%;height:100%;object-fit:cover"></span>`:p.color?`<span class="pthumb" style="background:${p.color}"><b>${p.name.slice(0,6)}</b></span>`:p.tone?`<span class="pthumb" style="background:${p.tone}">${ic[p.ic]}</span>`:'<span class="pthumb"><span class="plus">이미지</span></span>';
   const price=p=>p.ptype==='매번 직접 입력'?'판매 때 입력':p.ptype==='무게에 따라 계산'?`${p.price.toLocaleString()} / 100g`:p.price.toLocaleString();
@@ -2644,17 +2654,17 @@ function stock(){
       <div class="ih-r"><span class="more-w split"><button class="btn btn-out split-main" data-toast="엑셀 업로드 자리 (양식에 맞춰 채운 파일을 올려요)">엑셀 업로드</button><button class="btn btn-out split-arrow" data-xlmore="1" aria-haspopup="menu" aria-expanded="${!!ui.xlMore}" aria-label="엑셀 메뉴 열기"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></button>${ui.xlMore?`<span class="more-m" role="menu"><button role="menuitem" data-xl="tpl"><b>양식 내려받기</b><small>${ui.inv.cat!=='전체'?`'${ui.inv.cat}' 카테고리로 채운 `:''}등록용 빈 양식</small></button><button role="menuitem" data-xl="exp"><b>엑셀 내려받기</b><small>지금 보이는 목록을 엑셀로</small></button></span>`:''}</span><button class="btn btn-blk" data-pnew="1">+ 상품 추가</button></div></div>
     <div class="owntabs" role="tablist" aria-label="소유">
       ${[['all','전체'],['mine','내 굿즈'],['consign','위탁']].map(([k,l])=>`<button role="tab" aria-selected="${(f.own||'all')===k}" data-own="${k}" ${k!=='all'&&!me.length?'disabled title="내 이름을 먼저 골라 주세요"':''}>${l}${me.length?` <span class="tn">${k==='all'?ownAll.length:ownAll.filter(p=>k==='mine'?me.includes(p.owner):!me.includes(p.owner)).length}</span>`:''}</button>`).join('')}
-      <label class="mesel ${me.length?'':'need'}">내 이름<select data-me="1"><option value="">${me.length?'바꾸기…':'고르기'}</option>${uniq('owner').map(o=>`<option ${me.includes(o)?'selected':''}>${o}</option>`).join('')}</select>${me.length?`<b>${me.join(', ')}</b>`:''}</label>
+      <label class="mesel ${me.length?'set':'need'}">${me.length?`내 이름 <b>${me.join(', ')}</b><span class="chg">변경</span>`:'내 이름을 고르면 내 굿즈·위탁이 나뉘어요'}<select data-me="1" aria-label="내 이름"><option value="">${me.length?'바꾸기…':'고르기'}</option>${uniq('owner').map(o=>`<option ${me.includes(o)?'selected':''}>${o}</option>`).join('')}</select></label>
     </div>
-    <div class="stchips" role="group" aria-label="상태">${['active','soldout','returned','disposed','deleted'].map(k=>`<button aria-pressed="${(f.st||'active')===k}" data-st="${k}" class="st-${k}">${ST_LABEL[k]} <span class="tn">${stc(k)}</span></button>`).join('')}<small>${(f.st||'active')==='soldout'?'재고가 0이 되면 자동으로 여기로 와요':(f.st||'active')==='active'?'선택해서 반환·폐기·삭제로 정리할 수 있어요':'정리된 상품도 지난 판매·정산 기록에는 그대로 남아요'}</small></div>
-    <div class="chips ctab2" role="group" aria-label="카테고리">${['전체',...CATS].map(c=>`<button class="chip" aria-pressed="${f.cat===c}" data-icat="${c}">${c}</button>`).join('')}</div>
+    <div class="stchips" role="group" aria-label="상태">${['active','soldout','returned','disposed','deleted'].map(k=>`<button aria-pressed="${(f.st||'active')===k}" data-st="${k}" class="st-${k}">${ST_LABEL[k]} <span class="tn">${stc(k)}</span></button>`).join('')}${(f.st||'active')!=='active'?`<small>${(f.st||'active')==='soldout'?'재고가 0이 되면 자동으로 와요':'정리된 상품도 지난 판매·정산 기록엔 남아요'}</small>`:''}</div>
+
     <div class="itools">
-      <select data-isort aria-label="정렬" ${f.reorder?'disabled':''}>${['최신 순','이름 순','가격 높은 순','재고 적은 순'].map(o=>`<option ${f.sort===o?'selected':''}>${o}</option>`).join('')}</select>
-      <select data-iper aria-label="페이지당 개수">${[20,50,100].map(n=>`<option value="${n}" ${f.per===n?'selected':''}>${n}개씩 보기</option>`).join('')}</select>
+      <label class="fsel ${f.cat!=='전체'?'on':''}">카테고리<select data-icatsel="1">${['전체',...CATS].map(c=>`<option ${f.cat===c?'selected':''}>${c}</option>`).join('')}</select></label>
       <label class="fsel ${f.owner!=='전체'?'on':''}">소유자<select data-fsel="inv|owner">${['전체',...uniq('owner')].map(v=>`<option ${f.owner===v?'selected':''}>${v}</option>`).join('')}</select></label>
       <label class="fsel ${f.genre!=='전체'?'on':''}">장르<select data-fsel="inv|genre">${['전체',...uniq('genre')].map(v=>`<option ${f.genre===v?'selected':''}>${v}</option>`).join('')}</select></label>
-      ${act?'<button class="tbtn" data-freset="inv">필터 초기화</button>':''}
+      ${act?'<button class="tbtn" data-freset="inv">초기화</button>':''}
       <span style="flex:1"></span>
+      <label class="fsel">정렬<select data-isort ${f.reorder?'disabled':''}>${['최신 순','이름 순','가격 높은 순','재고 적은 순'].map(o=>`<option ${f.sort===o?'selected':''}>${o}</option>`).join('')}</select></label>
       ${f.select?`<span class="selbar"><b class="tn">${nsel}개 선택</b>${(f.st||'active')==='active'||(f.st||'active')==='soldout'?['returned','disposed','deleted'].map(k=>`<button class="tbtn ${k==='deleted'?'danger':''}" data-bulk="ask|${k}" ${nsel?'':'disabled'}>${ST_LABEL[k]}</button>`).join(''):`<button class="tbtn" data-bulk="ask|active" ${nsel?'':'disabled'}>판매 중으로 되돌리기</button>`}<button class="tbtn" data-bulk="cancel">취소</button></span>`:'<button class="tbtn" data-bulk="start">선택해서 정리</button>'}
     </div>
     ${f.confirmDel?(()=>{const ids=Object.keys(f.sel).filter(k=>f.sel[k]), left=ids.reduce((a,id)=>a+(P(id)?.stock||0),0), k=f.confirmDel, msg={returned:`남은 재고 ${left}개를 소유자에게 돌려준 것으로 기록하고 0으로 맞춰요.`,disposed:`남은 재고 ${left}개를 폐기(손실)로 기록하고 0으로 맞춰요.`,deleted:'목록과 판매 화면에서 숨겨요. 재고 수량은 그대로 두고 언제든 되돌릴 수 있어요.',active:'다시 판매 중 목록으로 돌려놓아요.'}[k]; return `<div class="confirmdel"><span><b>${ids.length}개를 ${ST_LABEL[k]}${k==='active'?'':' 처리'}할까요?</b> ${msg} 지난 판매·정산 기록은 남아요.</span><button class="btn btn-sm btn-blk" data-bulk="do|${k}">${ST_LABEL[k]}${k==='active'?'':' 처리'}</button><button class="btn btn-sm btn-gray" data-bulk="delno">취소</button></div>`;})():''}
@@ -2663,7 +2673,7 @@ function stock(){
       <div class="ithead">${f.select?`<input type="checkbox" data-selall aria-label="전체 선택" ${shown.length&&shown.every(p=>f.sel[p.id])?'checked':''}>`:''}<span>상품(총 ${list.length}개)</span><span>소유자</span><span>장르</span><span>남은재고</span>${f.reorder?'<span>순서</span>':''}</div>
       ${shown.map(p=>`<div class="irow">
         ${f.select?`<input type="checkbox" data-sel="${p.id}" ${f.sel[p.id]?'checked':''} aria-label="${qa(p.name)} 선택">`:''}
-        <button class="icell" data-pedit="${p.id}">${thumb(p)}<span class="in"><span class="nm">${p.name}${p.tag&&p.tag!=='없음'?`<em class="ptag">${p.tag}</em>`:''}${me.length&&!me.includes(p.owner)?'<em class="otag">위탁</em>':''}${pStatus(p)!=='active'?`<em class="sttag st-${pStatus(p)}">${ST_LABEL[pStatus(p)]}</em>`:''}</span><span class="pr tn">${price(p)}</span><small class="tn">${p.owner} · ${p.genre} · ${p.cat} · 재고 ${p.stock}</small></span></button>
+        <button class="icell" data-pedit="${p.id}">${thumb(p)}<span class="in"><span class="nm">${p.name}${p.tag&&p.tag!=='없음'?`<em class="ptag">${p.tag}</em>`:''}${me.length&&!me.includes(p.owner)?'<em class="otag">위탁</em>':''}${pStatus(p)!=='active'?`<em class="sttag st-${pStatus(p)}">${ST_LABEL[pStatus(p)]}</em>`:''}</span><span class="pr tn">${price(p)}</span><small class="tn"><span class="m-only">${p.owner} · ${p.genre} · </span>${p.cat}${p.code?` · ${p.code}`:''}</small></span></button>
         <button class="icol" data-f="inv|owner|${qa(p.owner)}" title="${qa(p.owner)}만 보기">${p.owner}</button>
         <button class="icol" data-f="inv|genre|${qa(p.genre)}" title="${qa(p.genre)}만 보기">${p.genre}</button>
         <span class="iqty tn ${p.stock<=10?'low-s':''}">${p.stock}</span>
@@ -3085,6 +3095,7 @@ document.addEventListener('click',ev=>{
 document.addEventListener('change',ev=>{
   const t=ev.target;
   if(t.dataset.rp){ ui.rp[t.dataset.rp]=t.value; ui.rp.k='custom'; if(ui.rp.from&&ui.rp.to) ui.rpOpen=false; route(); return; }
+  if(t.dataset.icatsel){ ui.inv.cat=t.value; ui.inv.page=1; route(); return; }
   if(t.dataset.me){ if(t.value){ ui.me=ui.me||{}; ui.me[ui.user.id]=[t.value]; try{localStorage.setItem('lb-me-'+ui.user.id,t.value)}catch(_){} toast(`'${t.value}' 상품을 내 굿즈로 볼게요`); } route(); return; }
   if(t.dataset.rksort){ ui.rk.sort=t.value; route(); return; }
   if(t.dataset.fsel){ const [sc,k]=t.dataset.fsel.split('|'); ui[sc][k]=t.value; if(sc==='inv') ui.inv.page=1; route(); return; }
