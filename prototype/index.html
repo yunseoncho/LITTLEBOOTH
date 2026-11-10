@@ -1588,6 +1588,8 @@ h1,h2,h3,.fold-body h3,.ccard b,.gcard b,.cd-info h1{word-break:keep-all}
 .nodata{font-size:14px;color:var(--sub);background:var(--hover);border-radius:12px;padding:14px 16px;margin:0;line-height:1.6}
 .srcnote{font-size:12px;color:var(--muted);margin:16px 0 0}
 .dnote{font-size:12px;color:var(--brand);font-weight:600}
+.rv-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:16px}
+.rv-top .srcnote{margin:0}
 </style>
 
 <div class="devbar" role="group" aria-label="기기 미리보기">
@@ -2023,7 +2025,7 @@ function overviewTab(e){
 }
 function salesTab(e){
   if(e.status==='prep') return `<div class="empty"><b>행사를 시작하면 판매를 기록할 수 있어요</b>준비 체크리스트를 확인한 뒤 시작해 주세요.<br><button class="btn btn-green" id="startOp2">행사 시작</button></div>`;
-  return `<div class="ovl"><section class="ovs">${statRow(e)}</section><section class="ovs"><h3>판매 기록</h3><ul class="log">${e.sales.length?e.sales.slice().reverse().map(logItem).join(''):`<li><span>예시 행사라 개별 주문 대신 합계만 보관돼요.</span></li>`}</ul></section></div>`;
+  return `<div class="ovl"><section class="ovs">${statRow(e)}</section>${txList(e)}</div>`;
 }
 function focusView(e){
   return `<div class="page focus"><main>
@@ -2098,6 +2100,12 @@ const toCSV = rows => '﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n');
 const fileBase = e => `${e.title.replace(/[\\/:*?"<>|\s]+/g,'_')}_${(evDays(e)[0]?iso(evDays(e)[0]):'')}`;
 const saleAt = (e,x) => x.at || `${evDays(e)[0]?iso(evDays(e)[0]):''} ${x.time}:00`;
 function csvRows(e, kind){
+  if(kind==='all'){ const r=revenue(e), o=orders(e), sec=(t,rows)=>[[`■ ${t}`],...rows,[]];
+    const retro=(e.retros||[]).map(x=>[x.at||'',x.t]);
+    return [[`리틀부스 결과·회고`,e.title],[`날짜`,e.date+(e.dateNote?' ('+e.dateNote+')':'')],[`장소`,e.place],...(e.source?[[`데이터 출처`,e.source]]:[]),[],
+      ...sec('요약',[['매출','주문','객단가','방문','세트·즉석 할인'],[r,o,o?Math.round(r/o):'',e.visits||'',discOf(e)]]),
+      ...sec('품목별 매출',csvRows(e,'cat')), ...sec('판매 순위',csvRows(e,'rank')), ...sec('결제수단별 정산',csvRows(e,'pay')),
+      ...sec('소유자별 정산',csvRows(e,'owner')), ...sec('회고',retro.length?[['작성','내용'],...retro]:[['기록 없음']])]; }
   if(kind==='cat'){ const rows=rankRows(e,'카테고리').sort((a,b)=>b.amt-a.amt), tot=rows.reduce((a,x)=>a+x.amt,0)||1;
     return [['카테고리','상품 종류','판매개수','판매금액','비율(%)'],...rows.map(x=>[x.name,x.n,x.qty,x.amt,(x.amt/tot*100).toFixed(1)]),['합계','',rows.reduce((a,x)=>a+x.qty,0),tot,'100.0']]; }
   if(kind==='rank'){ const rows=rankRows(e,'상품').sort((a,b)=>b.qty-a.qty), tot=rows.reduce((a,x)=>a+x.amt,0)||1;
@@ -2167,7 +2175,7 @@ const prevEv = e => { const d=evDate(e); return events.filter(x=>x!==e&&x.status
 function optTally(ev){ const t={}; if(ev.optBase) for(const k in ev.optBase) t[k]=ev.optBase[k]; else { const n=Object.values(ev.base).reduce((a,b)=>a+b,0); if(n){ t['선물 포장']=Math.round(n*.14); t['쇼핑백']=Math.round(n*.22); } }
   ev.sales.forEach(s=>{ if(s.opts) for(const k in s.opts) t[k]=(t[k]||0)+s.opts[k]; }); return t; }
 function rankRows(ev, tab){
-  const t=tally(ev), gross=Object.entries(t).reduce((a,[k,v])=>a+P(k).price*v,0), disc=discOf(ev), f=gross?Math.max(0,1-disc/gross):1;
+  const t=tally(ev), gross=Object.entries(t).reduce((a,[k,v])=>a+P(k).price*v,0), f=1; /* 할인은 상품별로 나누지 않고 합계에서만 뺌 */
   const brought = (k,q) => { const it=(ev.items||[]).find(x=>x.id===k); return Math.max(q, it?it.q:Math.ceil(q*1.25/5)*5); };
   if(tab==='옵션'){ const o=optTally(ev); return Object.entries(o).filter(([,q])=>q>0).map(([n,q])=>{const pr=(POPT.find(x=>x.n===n)||{p:0}).p; return {key:n,name:n,sub:`개당 ${pr.toLocaleString()}원`,qty:q,stock:null,amt:pr*q,net:pr*q};}); }
   const rows=Object.entries(t).filter(([k,q])=>q>0&&P(k)&&P(k).price>0).map(([k,q])=>{const p=P(k);return {key:k,name:p.name,sub:`${p.owner} · ${p.genre}`,qty:q,stock:brought(k,q),amt:p.price*q,net:Math.round((p.price*f-(p.cost||0))*q/10)*10,cat:p.cat};});
@@ -2181,7 +2189,7 @@ function rankTable(e){
   const pct=(a,b)=>Math.round(a/b*100);
   const shown=r.more?rows:rows.slice(0,5), SORTS=[['qty','판매개수 높은 순'],['amt','판매금액 높은 순'],['net','순수익 높은 순']];
   return `<section class="ovs">
-    <h3>판매 순위 ${csvBtn(e,'rank','판매 순위')}</h3>
+    <h3>판매 순위</h3>
     <div class="rk-bar"><div class="rk-tabs" role="group" aria-label="순위 기준">${['상품','옵션','카테고리'].map(t=>`<button aria-pressed="${r.tab===t}" data-rktab="${t}">${t}</button>`).join('')}</div>
       <label class="fsel">정렬<select data-rksort="1">${SORTS.map(([k,l])=>`<option value="${k}" ${r.sort===k?'selected':''}>${l}</option>`).join('')}</select></label></div>
     ${rows.length?`<div class="rk-t" role="table">
@@ -2194,7 +2202,7 @@ function rankTable(e){
         <span class="tn"><b>${won(x.net)}</b><small class="rk-d">마진 ${x.amt?pct(x.net,x.amt):0}%</small></span></div>`).join('')}
       <div class="rk-r rk-sum" role="row"><span></span><span class="rk-name"><b>합계</b><small>${rows.length}개 ${r.tab==='상품'?'상품':r.tab}</small></span><span class="tn"><small>총 판매</small><b>${rows.reduce((a,x)=>a+x.qty,0)}개</b></span><span class="tn"><small>총 매출</small><b>${won(totAmt)}</b></span><span class="tn"><small>순수익 · 마진 ${pct(totNet,totAmt)}%</small><b class="rk-big">${won(totNet)}</b></span></div>
     </div>${rows.length>5?`<button class="tbtn rk-more" data-rkmore="1">${r.more?'접기':`${rows.length-5}개 더 보기`}</button>`:''}
-    <p class="tc-cap">순수익 = 판매금액 − 상품 원가 − 할인 몫.${tcost?' 원가는 재고 관리에서 상품마다 입력한 값이에요.':' 이 행사 상품은 원가가 입력되지 않아 원가를 0원으로 계산했어요.'}</p>`
+    <p class="tc-cap">상품별 순수익 = 판매금액 − 원가. 할인은 상품별로 나누지 않고 합계 순수익에서만 빼요.${tcost?' 원가는 재고 관리에서 상품마다 입력한 값이에요.':' 이 행사 상품은 원가가 입력되지 않아 원가를 0원으로 계산했어요.'}</p>`
     :`<p style="color:var(--muted);font-size:14px">${r.tab==='옵션'?'옵션이 붙은 판매가 없어요.':'판매 기록이 없어요.'}</p>`}
   </section>`;
 }
@@ -2209,6 +2217,19 @@ function hourly(e){ if(e.noTime){ const h={}; for(let k=9;k<=21;k++) h[k]=0; ret
   for(let k=9;k<=21;k++) h[k]=0; if(rest) for(const k in w) h[k]+=Math.round(rest*w[k]/sum/100)*100;
   e.sales.forEach(s=>{ const hr=+(s.time||'0').split(':')[0]; h[hr]=(h[hr]||0)+s.total; }); return h; }
 function daily(e){ const ds=evDays(e), r=revenue(e); if(ds.length<2) return ds.map(d=>({d,v:r})); const w=ds.map((_,i)=>i===ds.length-1?.58:.42/(ds.length-1)); return ds.map((d,i)=>({d,v:Math.round(r*w[i]/100)*100})); }
+function visitHours(e){ const h={}; (e.visitTimes||[]).forEach(t=>{ const k=+t.split(':')[0]; h[k]=(h[k]||0)+1; }); return h; }
+function visitCap(e){ const vt=e.visitTimes||[]; if(!vt.length) return ''; const h=visitHours(e), pk=Object.keys(h).sort((a,b)=>h[b]-h[a])[0]; return `방문 기록 ${vt.length}회 · 가장 많이 온 시간 <b>${String(pk).padStart(2,'0')}:00</b>대 (${h[pk]}명)`; }
+function visitSvg(e){
+  const vt=e.visitTimes||[]; if(!vt.length) return `<p class="nodata">방문 시각 기록이 없어요. 운영 중에 [방문 +1]을 누르면 시각이 함께 남아요.${e.visits?` (방문 합계 ${e.visits}명만 있음)`:''}</p>`;
+  const h=visitHours(e), ks=Object.keys(h).map(Number), lo=Math.min(9,...ks), hi=Math.max(21,...ks), hrs=[]; for(let k=lo;k<=hi;k++) hrs.push(k);
+  const W=640,H=220,pb=30,pt=30,bw=W/hrs.length,max=Math.max(1,...Object.values(h)), pkv=Math.max(...Object.values(h));
+  return `<svg viewBox="0 0 ${W} ${H}" class="tc-svg" role="img" aria-label="시간대별 방문"><line x1="0" x2="${W}" y1="${H-pb}" y2="${H-pb}" stroke="var(--line)"/>
+    ${hrs.map((k,i)=>{const v=h[k]||0, x=bw*i+bw/2, bh=(H-pt-pb)*v/max, w=bw*.55, pk=v===pkv&&v>0, lab=`${String(k).padStart(2,'0')}:00`;
+      return `<g class="tc-g" data-tip="${qa(`<b>${lab}</b><span><i class="k1"></i>방문<em>${v}명</em></span>`)}" tabindex="0"><rect x="${x-bw/2}" y="0" width="${bw}" height="${H}" fill="transparent"/>
+      <rect x="${x-w/2}" y="${H-pb-Math.max(bh,3)}" width="${w}" height="${Math.max(bh,3)}" rx="5" fill="${pk?'var(--brand)':v?'var(--fg)':'#e4e4e8'}"/>
+      ${v?`<text x="${x}" y="${H-pb-Math.max(bh,3)-8}" text-anchor="middle" font-size="12" font-weight="700" fill="${pk?'var(--brand)':'var(--fg)'}">${v}</text>`:''}
+      ${i%2===0?`<text x="${x}" y="${H-pb+19}" text-anchor="middle" font-size="12" fill="var(--sub)">${lab}</text>`:''}</g>`}).join('')}</svg>`;
+}
 function timeCharts(e){
   if(e.noTime) return `<section class="ovs"><h3>일별·시간대별 매출</h3><p class="nodata">이 행사는 결제별 시각 기록이 없어서 보여줄 수 없어요. 상품별 판매량과 결제수단별 합계만 남아 있어요.</p></section>`;
   const pv=null, W=640,H=220,pl=8,pb=30,pt=30;
@@ -2243,16 +2264,16 @@ function timeCharts(e){
       ${ui.tc==='day'||pk?`<text x="${ui.tc==='day'&&b.o!=null?cx-2:cx}" y="${H-pb-Math.max(hh,3)-8}" text-anchor="middle" font-size="12" font-weight="700" fill="${pk?'var(--brand)':'var(--fg)'}">${won(b.v)}</text>`:''}
       ${ui.tc==='day'||i%2===0?`<text x="${cx}" y="${H-pb+19}" text-anchor="middle" font-size="12" fill="var(--sub)">${b.lab}</text>`:''}</g>`}).join('')}
   </svg>`;
-  return `<section class="ovs"><h3>${ui.tc==='day'?'일별':'시간대별'} 매출</h3>
-    <div class="rk-bar"><div class="rk-tabs" role="group" aria-label="그래프 기준"><button aria-pressed="${ui.tc==='day'}" data-tc="day">일별</button><button aria-pressed="${ui.tc==='hour'}" data-tc="hour">시간대별</button></div>
+  return `<section class="ovs"><h3>${ui.tc==='day'?'일별 매출':ui.tc==='hour'?'시간대별 매출':'시간대별 방문'}</h3>
+    <div class="rk-bar"><div class="rk-tabs" role="group" aria-label="그래프 기준"><button aria-pressed="${ui.tc==='day'}" data-tc="day">일별</button><button aria-pressed="${ui.tc==='hour'}" data-tc="hour">시간대별</button><button aria-pressed="${ui.tc==='visit'}" data-tc="visit">방문 시간대</button></div>
       </div>
-    <div class="tc-wrap">${ui.tc==='hour'?lineSvg():svg}<div class="ttip" hidden></div></div>
-    <p class="tc-cap">${cap}</p></section>`;
+    <div class="tc-wrap">${ui.tc==='visit'?visitSvg(e):ui.tc==='hour'?lineSvg():svg}<div class="ttip" hidden></div></div>
+    <p class="tc-cap">${ui.tc==="visit"?visitCap(e):cap}</p></section>`;
 }
 function catBars(e){
   const rows=rankRows(e,'카테고리').sort((a,b)=>b.amt-a.amt), tot=rows.reduce((a,x)=>a+x.amt,0)||1, qty=rows.reduce((a,x)=>a+x.qty,0);
   const SC=['var(--brand)','#1c1c20','#55555c','#8e8e95','#c4c4ca','#e2e2e6'];
-  return `<section class="ovs"><h3>품목별 매출 ${csvBtn(e,'cat','품목별 매출')}</h3>
+  return `<section class="ovs"><h3>품목별 매출</h3>
     <div class="cb-total"><small>총 판매액</small><b class="tn">${won(tot)}</b><span class="tn">${qty}개 · ${rows.length}개 품목</span></div>
     <div class="tc-wrap cb-wrap"><div class="cbar" role="img" aria-label="품목별 매출 비율">${rows.map((x,i)=>{const pc=x.amt/tot*100;
       return `<span class="tc-g cseg" tabindex="0" style="flex:${x.amt} 0 0;background:${SC[Math.min(i,SC.length-1)]}" data-tip="${qa(`<b>${x.name}</b><span><i style="background:${SC[Math.min(i,SC.length-1)]}"></i>매출<em>${won(x.amt)}</em></span><span>비율<em>${pc.toFixed(1)}%</em></span><span>판매<em>${x.qty}개 · ${x.sub}</em></span>`)}">${pc>=9?`<em class="tn">${Math.round(pc)}%</em>`:''}</span>`}).join('')}</div><div class="ttip" hidden></div></div>
@@ -2284,7 +2305,7 @@ function ownerSettle(e){
     (e.items||[]).forEach(i=>{ const p=P(i.id); if(p&&p.settle==='개인') per[p.owner]=per[p.owner]||0; });
     ids.forEach(k=>{ const p=P(k), v=p.price*t[k]; if(p.settle==='개인') per[p.owner]=(per[p.owner]||0)+v; else joint+=v; });
     const pt=Object.values(per).reduce((a,b)=>a+b,0);
-    return `<section class="ovs"><h3>정산 ${csvBtn(e,'owner','소유자별 정산')}</h3>
+    return `<section class="ovs"><h3>정산</h3>
       <div class="stl3"><div class="k"><small>총 판매금액</small><b class="tn">${won(gross-disc)}</b><span>결제 ${orders(e)}건${disc?` · 세트 할인 −${won(disc)}`:''}</span></div>
         <div><small>개인에게 지급할 금액</small><b class="tn">${won(pt)}</b><span>개인정산 체크 상품 기준</span></div>
         <div><small>공동으로 정산할 금액</small><b class="tn">${won(joint-disc)}</b><span>세트 할인 차감 · 비용 뺀 뒤 n/1</span></div></div>
@@ -2295,7 +2316,7 @@ function ownerSettle(e){
   }
   const rows=rankRows(e,'상품'), o={}; rows.forEach(r=>{const p=P(r.key), x=o[p.owner]||(o[p.owner]={qty:0,amt:0,cost:0,net:0,n:0}); x.qty+=r.qty; x.amt+=r.amt; x.cost+=(p.cost||0)*r.qty; x.net+=r.net; x.n++;});
   const ent=Object.entries(o).sort((a,b)=>b[1].amt-a[1].amt), tot=ent.reduce((a,[,x])=>a+x.amt,0)||1, disc=e.sales.reduce((a,s)=>a+s.discount,0);
-  return `<section class="ovs"><h3>소유자별 정산 ${csvBtn(e,'owner','소유자별 정산')}</h3>
+  return `<section class="ovs"><h3>소유자별 정산</h3>
     <div class="ost">${ent.map(([k,x])=>`<div class="ost-r"><div class="ost-n"><b class="own-n">${k}${infoBtn(e,k)}</b><small class="tn">상품 ${x.n}종 · ${x.qty}개 · 매출의 ${Math.round(x.amt/tot*100)}%</small></div>
       <dl class="tn"><div><dt>판매금액</dt><dd>${won(x.amt)}</dd></div>${x.cost?`<div><dt>원가</dt><dd>−${won(x.cost)}</dd></div>`:''}${disc?`<div><dt>할인 몫</dt><dd>−${won(x.amt-x.cost-x.net)}</dd></div>`:''}<div class="ost-t"><dt>정산 금액</dt><dd>${won(x.net+x.cost)}</dd></div><div><dt>순수익</dt><dd>${won(x.net)}</dd></div></dl></div>`).join('')}</div>
     <p class="tc-cap">정산 금액 = 판매금액 − 할인 몫 (원가는 각자 부담). 순수익 = 정산 금액 − 원가.</p></section>`;
@@ -2360,13 +2381,12 @@ function txList(e){
 function reviewTab(e){
   const rev=revenue(e), pay = Object.keys(e.pay).length?e.pay:{카드:.6,현금:.3,이체:.1};
   return `<div class="ovl">
-    ${e.source?`<p class="srcnote">데이터 출처: ${e.source}${e.discNote?` · ${e.discNote}`:''}</p>`:''}
+    <div class="rv-top">${e.source?`<p class="srcnote">데이터 출처: ${e.source}${e.discNote?` · ${e.discNote}`:''}</p>`:'<span></span>'}<button class="btn btn-out btn-sm rv-csv" data-csv="${e.id}|all">↓ 결과·회고 CSV 내려받기</button></div>
     <section class="ovs">${statRow(e)}</section>
     ${timeCharts(e)}
     ${catBars(e)}
     ${rankTable(e)}
-    <section class="ovs"><h3>결제수단별 정산 ${csvBtn(e,'pay','결제수단')}</h3><ul class="rows">${Object.entries(payMix(e)).sort((a,b)=>b[1].amt-a[1].amt).map(([k,x])=>`<li><span>${k}${x.n!=null?` <small style="color:var(--muted)">${x.n}건</small>`:''}</span><span class="tn">${won(x.amt)}</span></li>`).join('')}</ul></section>
-    ${txList(e)}
+    <section class="ovs"><h3>결제수단별 정산</h3><ul class="rows">${Object.entries(payMix(e)).sort((a,b)=>b[1].amt-a[1].amt).map(([k,x])=>`<li><span>${k}${x.n!=null?` <small style="color:var(--muted)">${x.n}건</small>`:''}</span><span class="tn">${won(x.amt)}</span></li>`).join('')}</ul></section>
     ${ownerSettle(e)}
     ${retroBlock(e)}
     ${fieldLog(e)}
@@ -2663,8 +2683,8 @@ function guideSteps(){
   if(live) st.push({h:'event-'+live.id,sel:'.ptiles',t:'판매 화면',b:'상품 타일을 누르면 오른쪽 주문에 담겨요. 줄을 누르면 수량·옵션을 바꾸고, [할인]과 결제수단으로 계산해요.'});
   if(done) st.push(
     {h:'event-'+done.id,tab:2,sel:'.stat4',t:'결과 한눈에',b:'행사가 끝나면 매출·주문·객단가·방문이 정리돼요. 아래로 일별·시간대별 매출, 품목별 매출 비율이 이어져요.'},
-    {h:'event-'+done.id,tab:2,sel:'.rk-t',t:'판매 순위',b:'상품·옵션·카테고리별로 무엇이 얼마나 팔렸는지, 가져간 재고 중 몇 %가 나갔는지 봐요. 각 섹션의 CSV 버튼으로 내려받을 수 있어요.'},
-    {h:'event-'+done.id,tab:2,sel:'.txl',t:'결제 내역',b:'결제 한 건마다 시각(초까지), 상품, 할인, 결제수단이 남아요. 정산할 때 근거가 돼요.'},
+    {h:'event-'+done.id,tab:2,sel:'.rk-t',t:'판매 순위',b:'상품·옵션·카테고리별로 무엇이 얼마나 팔렸는지, 가져간 재고 중 몇 %가 나갔는지 봐요. 위쪽 [결과·회고 CSV 내려받기]로 전체를 한 파일로 받아요.'},
+    {h:'event-'+done.id,tab:1,sel:'.txl, .nodata',t:'결제 내역 (판매 기록)',b:'결제 한 건마다 시각(초까지), 상품, 할인, 결제수단이 남아요. 정산할 때 근거가 돼요.'},
     {h:'event-'+done.id,tab:2,sel:'.ost, .stl3',t:'소유자별 정산',b:'함께 나간 부스라면 개인 정산과 공동 정산을 나눠 보여줘요. ⓘ를 누르면 그 사람 상품이 언제 몇 개 팔렸는지 볼 수 있어요.'},
     {h:'event-'+done.id,tab:2,sel:'.flog',t:'행사 로그',b:'준비부터 종료까지 첫 판매, 방문·매출 돌파, 품절, 메모가 시간순으로 쌓여요. 회고는 댓글처럼 남겨요.'});
   st.push(
@@ -2823,7 +2843,7 @@ document.addEventListener('click',ev=>{
   if(d.gend){ guideGo(-1); return; }
   if(d.xlmore){ ui.xlMore=!ui.xlMore; route(); return; }
   if(d.xl){ ui.xlMore=false; route(); d.xl==='tpl'?excelTemplate():excelExport(); return; }
-  if(d.csv){ const [eid,kind]=d.csv.split('|'), ev2=E(eid), NM={cat:'품목별매출',rank:'판매순위',pay:'결제수단',tx:'결제내역',owner:'소유자별정산'}; saveFile(`${fileBase(ev2)}_${NM[kind]}.csv`, toCSV(csvRows(ev2,kind))); return; }
+  if(d.csv){ const [eid,kind]=d.csv.split('|'), ev2=E(eid), NM={all:'결과회고',cat:'품목별매출',rank:'판매순위',pay:'결제수단',tx:'결제내역',owner:'소유자별정산'}; saveFile(`${fileBase(ev2)}_${NM[kind]}.csv`, toCSV(csvRows(ev2,kind))); return; }
   if(ui.xlMore&&!b.closest('.more-w')){ ui.xlMore=false; route(); }
   if(d.txmore){ ui.txMore=!ui.txMore; route(); return; }
   if(d.tc){ ui.tc=d.tc; route(); return; }
@@ -2853,7 +2873,7 @@ document.addEventListener('click',ev=>{
   else if(b.id==='toInfo'){ ui.tab[e.id]=0; route(); scroller().scrollTo(0,0); }
   else if(b.id==='memoToggle'){ ui.memoOpen=!ui.memoOpen; route(); if(ui.memoOpen) setTimeout(()=>$('#memoIn')?.focus(),0); }
   else if(b.id==='clear'){ui.lines=[];ui.selLine=null;ui.discount=0;route();}
-  else if(b.id==='visit'){e.visits++;route();toast('방문 +1');}
+  else if(b.id==='visit'){e.visits++; (e.visitTimes=e.visitTimes||[]).push(nowKST());route();toast('방문 +1');}
   else if(b.id==='openSheet'){frame.classList.add('sheet');}
   else if(b.id==='sheetClose'){frame.classList.remove('sheet');}
   else if(b.id==='reply'){ui.step++;route();}
