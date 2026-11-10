@@ -2333,7 +2333,7 @@ function daily(e){ const ds=evDays(e), r=revenue(e); if(ds.length<2) return ds.m
 const toMin = t => { const [h,m]=t.split(':').map(Number); return h*60+m; };
 const hm = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
 function visitBins(e){ const b={}; (e.visitTimes||[]).forEach(t=>{ const k=Math.floor(toMin(t)/5)*5; b[k]=(b[k]||0)+1; }); return b; }
-function visitLegend(){ return `<span class="vleg"><span><i style="background:#b4b4ba"></i>5분 단위 방문 (왼쪽 눈금)</span><span><i class="vln"></i>시간당 방문 추이 (점의 숫자 = 그 시간 방문 수)</span></span>`; }
+function visitLegend(){ return `<span class="vleg"><span><i style="background:#b4b4ba"></i>5분 단위 방문 (왼쪽 눈금)</span><span><i style="background:var(--fg)"></i>가장 많이 온 5분</span><span><i class="vln"></i>시간당 방문 추이 (점의 숫자 = 그 시간 방문 수)</span></span>`; }
 function visitCap(e){ const vt=e.visitTimes||[]; if(!vt.length) return ''; const b=visitBins(e), pk=Object.keys(b).sort((x,y)=>b[y]-b[x]||x-y)[0], H={}; vt.forEach(t=>{const h=+t.split(':')[0]; H[h]=(H[h]||0)+1;}); const ph=Object.keys(H).sort((a,c)=>H[c]-H[a])[0];
   return `방문 기록 ${vt.length}회 · 5분 단위 최다 <b>${hm(+pk)}~${hm(+pk+5)}</b> (${b[pk]}명) · 시간 단위 최다 ${String(ph).padStart(2,'0')}:00대 (${H[ph]}명)`; }
 function visitSvg(e){
@@ -2345,7 +2345,7 @@ function visitSvg(e){
     <line x1="0" x2="${W}" y1="${H-pb}" y2="${H-pb}" stroke="var(--line)"/>
     ${bins.map((m,i)=>{const v=b[m]||0, x=bw*i+bw/2, bh=(H-pt-pb)*v/max, pk=v===pkv&&v>0;
       return `<g class="tc-g" data-tip="${qa(`<b>${hm(m)}~${hm(m+5)}</b><span><i class="k1"></i>방문<em>${v}명</em></span>`)}" tabindex="0"><rect x="${x-bw/2}" y="0" width="${bw}" height="${H}" fill="transparent"/>
-      ${v?`<rect x="${x-w/2}" y="${H-pb-bh}" width="${w}" height="${bh}" rx="1.5" fill="${pk?'var(--fg)':'#b4b4ba'}"/>`:''}
+      ${v?`<rect x="${x-w/2}" y="${H-pb-bh}" width="${w}" height="${bh}" rx="1.5" fill="${pk?'var(--fg)':'#b4b4ba'}"/>`:''}${pk?`<text x="${x+w/2+4}" y="${H-pb-bh+10}" font-size="11" font-weight="800" fill="var(--fg)" stroke="var(--bg)" stroke-width="3" paint-order="stroke">최다 ${v}명 · ${hm(m)}</text>`:''}
       ${m%60===0?`<line x1="${x-bw/2}" x2="${x-bw/2}" y1="${H-pb}" y2="${H-pb+5}" stroke="var(--line)"/><text x="${x-bw/2}" y="${H-pb+19}" text-anchor="${i===0?'start':'middle'}" font-size="11" fill="var(--sub)">${hm(m)}</text>`:''}</g>`}).join('')}
     ${(()=>{ const hrsM=[]; for(let m=lo;m<hi;m+=60) hrsM.push(m); const cnt=hrsM.map(m=>bins.filter(x=>x>=m&&x<m+60).reduce((a,x)=>a+(b[x]||0),0)), hmax=Math.max(1,...cnt);
       const pts=hrsM.map((m,i)=>[(m-lo+30)/5*bw, H-pb-(H-pt-pb)*cnt[i]/hmax]);
