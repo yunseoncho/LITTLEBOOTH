@@ -24,17 +24,37 @@ for p in products:
 for pid,name,owner,q in [('s_setc_pin','세트 C 한정 핀뱃지','공동',5),('s_sway_sticker','인스타 팔로우 특전 · SWAY 스티커','한재민',30)]:
     addp(id=pid,code='특전',name=name,cat='특전',owner=owner,genre='특전',price=0,stock=q,settle='공동' if owner=='공동' else '개인',memo='원본 상품표의 초기 수량 (남은 수량 기록 없음)',logs=[])
     if os.path.exists(os.path.join(PHOTO_DIR,pid+'.jpg')): products[-1]['photo']='products/'+pid+'.jpg'
-# 서코는 결제별 기록이 없음 → 상품별 판매량·결제수단 합계·세트 할인 합계만 사용 (임의 결제 생성 안 함)
-seoco_base={sid[c]:sold for c,_,_,_,_,_,sold,_ in SP if sold}
-seoco=dict(id='seoco0823',title='8월 서코 일요일',big='서코',cap='코믹월드',date='2026. 8.',dateNote='일요일 · 정확한 날짜 미입력',
+# 서코 결제 내역: 레거시 앱 내보내기 comicworld-payment-detail-2026-08-16.xlsx (결제 48건, 시각 초 단위)
+import openpyxl
+PAY_XLSX = sys.argv[2] if len(sys.argv)>2 else 'comicworld-payment-detail-2026-08-16.xlsx'
+ws = openpyxl.load_workbook(PAY_XLSX, data_only=True)['판매내역']
+code2pid = {c: sid[c] for c in sid}
+orders = {}
+for r in ws.iter_rows(min_row=2, values_only=True):
+    oid, at, pay, code, name, cat, owner, price, qty, amt, disc, tot = r[:12]
+    o = orders.setdefault(str(oid), {'at': at, 'pay': pay, 'items': {}, 'discount': 0, 'total': None})
+    pid = code2pid[code]
+    o['items'][pid] = o['items'].get(pid, 0) + qty
+    if disc not in ('', None): o['discount'] = disc; o['total'] = tot
+sales = []
+for oid, o in sorted(orders.items(), key=lambda kv: kv[1]['at']):
+    sales.append(dict(items=[{'id': k, 'q': v} for k, v in o['items'].items()], opts={}, discount=o['discount'], extra=0,
+                      total=o['total'], pay=o['pay'], type='현장', time=o['at'][11:16], at=o['at'], oid=oid, note=''))
+# 표 기준 판매량과 결제 내역 판매량이 같은지 확인
+from collections import Counter
+chk = Counter()
+for x in sales:
+    for i in x['items']: chk[i['id']] += i['q']
+assert all(chk.get(sid[c], 0) == sold for c, _, _, _, _, _, sold, _ in SP), 'payment xlsx != inventory table'
+assert sum(x['total'] for x in sales) == 433000 and len(sales) == 48
+seoco=dict(id='seoco0816',title='8월 서코 일요일',big='서코',cap='코믹월드',date='2026. 8. 16.',
   place='일산 킨텍스 · BJ04, BJ05',booth='BJ04, BJ05',status='done',color='--c2',
-  goal='',visits=0,sales=[],base=seoco_base,noTime=True,ordersReal=48,discTotal=9000,
-  discNote='세트 할인 합계 9,000원 (세트별 적용 횟수는 기록 없음)',
-  payReal={'계좌이체':{'amt':330000,'n':33},'현금':{'amt':85000,'n':13},'카카오페이':{'amt':18000,'n':2}},
-  pay={},start='',endAt='',checklist=[],
+  goal='',visits=0,sales=sales,base={},pay={},start='',endAt='',checklist=[],
   items=[{'id':sid[p[0]],'q':p[5]+p[6]} for p in SP],
   notes=[],review='',retros=[],
-  source='레거시 앱 재고표(판매가·재고·판매량) + 정산 화면 합계')
+  discNote=f"할인 {sum(x['discount'] for x in sales):,}원 · {sum(1 for x in sales if x['discount'])}건 (세트 구분은 기록 없음)",
+  source='레거시 앱 결제 내역(2026-08-16, 48건) + 재고표')
+seoco_base = dict(chk)
 # ---- 여의도 (Supabase test1234) ----
 st=json.load(open(sys.argv[1] if len(sys.argv)>1 else 'ws_state.json')); ev=st['events'][0]
 inv=st['inventory']; idmap={}

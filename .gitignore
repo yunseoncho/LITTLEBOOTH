@@ -11,3 +11,4 @@ serviceAccount*.json
 tools/seed/ws_state*.json
 __pycache__/
 *.pyc
+tools/seed/*.xlsx

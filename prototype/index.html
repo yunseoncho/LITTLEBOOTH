@@ -1732,6 +1732,7 @@ select option{color:#111;background:#fff}
 <div class="toast" id="toast" role="status"></div>
 </div>
 
+<script src="demo-data.js"></script>
 <script src="account-test1234.js"></script>
 <script>
 const won = n => n.toLocaleString('ko-KR') + '원';
@@ -1804,7 +1805,7 @@ const isMine = p => meNames().includes(p.owner);
 function invList(withStatus=true){ const f=ui.inv, me=meNames();
   return products.filter(p=>(!withStatus||(f.st||'active')===pStatus(p)) && (f.own==='all'||!f.own||!me.length||(f.own==='mine'?me.includes(p.owner):!me.includes(p.owner)))
     && (f.cat==='전체'||p.cat===f.cat)&&(f.owner==='전체'||p.owner===f.owner)&&(f.genre==='전체'||p.genre===f.genre)&&nameMatch(p,f.q.trim())); }
-const DATASETS = { demo:{ user:{id:'demo',name:'데모',booth:'예시 부스',me:['서진']}, products:clone(products), events:clone(events) } };
+const DATASETS = { demo: typeof DEMO_DATA!=='undefined' ? DEMO_DATA : { user:{id:'demo',name:'데모',booth:'예시 부스',me:['서진']}, products:clone(products), events:clone(events) } };
 if(typeof ACCOUNT_TEST1234!=='undefined') DATASETS.test1234 = ACCOUNT_TEST1234;
 const ACCOUNTS = { test1234:'test1234' };
 function loadData(key){
@@ -2323,10 +2324,10 @@ async function reviewExcel(e){
   r=table(s3,r,[['구분','소유자','금액'],...Object.entries(per).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[Object.keys(joint).length?'개인 지급':'판매',k,v]),...Object.entries(joint).sort((a,b)=>b[1]-a[1]).map(([k,v])=>['공동 정산 상품',k,v])],{money:[2]});
   const pt=Object.values(per).reduce((a,b)=>a+b,0), jt=Object.values(joint).reduce((a,b)=>a+b,0);
   r=title(s3,r,'합계');
-  const tot=[['항목','','금액'],['상품 판매금액 (할인 전)','',pt+jt],['할인','',-disc],['총 판매금액','',r0]];
-  if(jt) tot.push(['개인에게 지급할 금액','',pt],['공동으로 정산할 금액 (할인 차감)','',jt-disc]);
+  const xo=e.sales.reduce((a,x)=>a+(x.extra||0),0), tot=[['항목','','금액'],['상품 판매금액 (할인 전)','',pt+jt],...(xo?[['옵션','',xo]]:[]),['할인','',-disc],['총 판매금액','',r0]];
+  if(jt) tot.push(['개인에게 지급할 금액','',pt],['공동으로 정산할 금액 (할인 차감·옵션 포함)','',jt-disc+xo]);
   table(s3,r,tot,{money:[2]},{boldLast:jt?3:1});
-  if(jt){ s3.getCell(r+4,1).font={bold:true,color:{argb:PINK}}; s3.getCell(r+4,3).font={bold:true,color:{argb:PINK}}; }
+  if(jt){ const pr=r+tot.length-1; s3.getCell(pr,1).font={bold:true,color:{argb:PINK}}; s3.getCell(pr,3).font={bold:true,color:{argb:PINK}}; }
   // 4) 판매 기록
   const s4=wb.addWorksheet('판매 기록',{views:[{state:'frozen',ySplit:2}]}); widths(s4,[11,20,11,9,28,12,22,10,7,11,10,13,24]);
   s4.getCell('A1').value='판매 기록 (결제 시각순)'; s4.getCell('A1').font={bold:true,size:13};
@@ -2464,7 +2465,7 @@ function catBars(e){
   const rows=rankRows(e,'카테고리').sort((a,b)=>b.amt-a.amt), tot=rows.reduce((a,x)=>a+x.amt,0)||1, qty=rows.reduce((a,x)=>a+x.qty,0);
   const SC=['var(--brand)','#1c1c20','#55555c','#8e8e95','#c4c4ca','#e2e2e6'];
   return `<section class="ovs"><h3>품목별 매출</h3>
-    <div class="cb-total"><small>총 판매액</small><b class="tn">${won(tot)}</b><span class="tn">${qty}개 · ${rows.length}개 품목</span></div>
+    <div class="cb-total"><small>상품 판매액</small><b class="tn">${won(tot)}</b><span class="tn">${qty}개 · ${rows.length}개 품목${(()=>{const xo=e.sales.reduce((a,x)=>a+(x.extra||0),0), d=discOf(e); return (xo||d)?` · 옵션 +${won(xo)} · 할인 −${won(d)} = 매출 ${won(revenue(e))}`:'';})()}</span></div>
     <div class="tc-wrap cb-wrap"><div class="cbar" role="img" aria-label="품목별 매출 비율">${rows.map((x,i)=>{const pc=x.amt/tot*100;
       return `<span class="tc-g cseg" tabindex="0" style="flex:${x.amt} 0 0;background:${SC[Math.min(i,SC.length-1)]}" data-tip="${qa(`<b>${x.name}</b><span><i style="background:${SC[Math.min(i,SC.length-1)]}"></i>매출<em>${won(x.amt)}</em></span><span>비율<em>${pc.toFixed(1)}%</em></span><span>판매<em>${x.qty}개 · ${x.sub}</em></span>`)}">${pc>=9?`<em class="tn">${Math.round(pc)}%</em>`:''}</span>`}).join('')}</div><div class="ttip" hidden></div></div>
     <ul class="cb-leg">${rows.map((x,i)=>`<li><i style="background:${SC[Math.min(i,SC.length-1)]}"></i>${x.name} <b class="tn">${Math.round(x.amt/tot*100)}%</b></li>`).join('')}</ul>
@@ -2491,14 +2492,14 @@ function ownerModal(){
 function ownerSettle(e){
   const t=tally(e), ids=Object.keys(t).filter(k=>P(k));
   if(ids.some(k=>P(k).settle==='공동')){
-    const disc=discOf(e), gross=ids.reduce((a,k)=>a+P(k).price*t[k],0), per={}; let joint=0;
+    const xo=e.sales.reduce((a,x)=>a+(x.extra||0),0), disc=discOf(e), gross=ids.reduce((a,k)=>a+P(k).price*t[k],0), per={}; let joint=0;
     (e.items||[]).forEach(i=>{ const p=P(i.id); if(p&&p.settle==='개인') per[p.owner]=per[p.owner]||0; });
     ids.forEach(k=>{ const p=P(k), v=p.price*t[k]; if(p.settle==='개인') per[p.owner]=(per[p.owner]||0)+v; else joint+=v; });
     const pt=Object.values(per).reduce((a,b)=>a+b,0);
     return `<section class="ovs"><h3>정산</h3>
-      <div class="stl3"><div class="k"><small>총 판매금액</small><b class="tn">${won(gross-disc)}</b><span>결제 ${orders(e)}건${disc?` · 세트 할인 −${won(disc)}`:''}</span></div>
+      <div class="stl3"><div class="k"><small>총 판매금액</small><b class="tn">${won(gross-disc+xo)}</b><span>결제 ${orders(e)}건${disc?` · 할인 −${won(disc)}`:''}${xo?` · 옵션 +${won(xo)}`:''}</span></div>
         <div><small>개인에게 지급할 금액</small><b class="tn">${won(pt)}</b><span>개인정산 체크 상품 기준</span></div>
-        <div><small>공동으로 정산할 금액</small><b class="tn">${won(joint-disc)}</b><span>세트 할인 차감 · 비용 뺀 뒤 n/1</span></div></div>
+        <div><small>공동으로 정산할 금액</small><b class="tn">${won(joint-disc+xo)}</b><span>할인 차감${xo?' · 옵션 포함':''} · 비용 뺀 뒤 n/1</span></div></div>
       <h4 class="stl-h">개인 정산 내역 <small>비용 차감 없이 각 담당자에게 돌아가는 매출</small></h4>
       <ul class="rows">${Object.entries(per).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<li><span class="own-n">${k}${infoBtn(e,k)}</span><span class="tn"><b>${won(v)}</b></span></li>`).join('')}</ul>
       <h4 class="stl-h" style="margin-top:18px">공동 정산 상품 담당 <small>공동 정산 금액에 합산되는 담당자별 판매</small></h4>
@@ -2545,13 +2546,13 @@ function fieldLog(e){
   if(!isReal&&e.checklist.length&&e.checklist.every(c=>c.d)) prep.push({at:dd(1),k:'준비',t:'준비 체크리스트 모두 완료'});
   const firstHr=hrs.find(k=>H[k])??10, lastHr=[...hrs].reverse().find(k=>H[k])??18;
   const startAt=e.start||`${String(firstHr).padStart(2,'0')}:00`, endAt=e.endAt||`${String(lastHr+1).padStart(2,'0')}:00`;
-  const run=[{at:startAt,k:'시작',t:'운영 시작'},...ev];
-  const fin=[{at:endAt,k:'종료',t:`행사 종료 · 매출 ${won(revenue(e))} · 주문 ${orders(e)}건 · 방문 ${visTxt(e)}`}];
+  const run=[...((isReal&&!e.start)?[]:[{at:startAt,k:'시작',t:'운영 시작'}]),...ev];
+  const fin=[{at:(isReal&&!e.endAt)?'—':endAt,k:'종료',t:`행사 종료 · 매출 ${won(revenue(e))} · 주문 ${orders(e)}건 · 방문 ${visTxt(e)}`}];
   (e.retros||[]).forEach(r=>fin.push({at:/^\d/.test(r.at)?r.at.split(' ').slice(0,2).join(' '):(isReal?'—':dd(0)),k:'회고',t:r.t.length>40?r.t.slice(0,40)+'…':r.t}));
   const li=x=>`<li class="fl-${x.k}"><time class="tn">${x.at}</time><i></i><span><em>${x.k}</em>${x.t}</span></li>`;
   const ph=(n,label,sub,arr)=>`<li class="fl-ph"><span class="fl-pn">${n}</span><b>${label}</b><small class="tn">${sub}</small></li>${arr.map(li).join('')}`;
   return `<section class="ovs"><h3>행사 로그 <span class="ov-n" style="font-weight:500">${prep.length+run.length+fin.length}개</span></h3>
-    <ol class="flog">${prep.length?ph(1,'운영 준비',`${dd(14)} ~ ${dd(1)}`,prep):''}${ph(2,'운영 중',`${dd(0)} ${startAt} ~ ${endAt}`,run)}${ph(3,'운영 종료',dd(0),fin)}</ol></section>`;
+    <ol class="flog">${prep.length?ph(1,'운영 준비',`${dd(14)} ~ ${dd(1)}`,prep):''}${ph(2,'운영 중',(isReal&&!e.start)?`${dd(0)} · 첫 결제 ${e.sales.map(x=>x.time).sort()[0]||''} ~ 마지막 결제 ${e.sales.map(x=>x.time).sort().pop()||''}`:`${dd(0)} ${startAt} ~ ${endAt}`,run)}${ph(3,'운영 종료',dd(0),fin)}</ol></section>`;
 }
 function retroBlock(e){
   if(!e.retros) e.retros = e.review?[{at:'행사 당일',t:e.review}]:[];
