@@ -15,6 +15,15 @@ for code,name,cat,owner,price,stock,sold,genre in SP:
     sid[code]=pid
     p=addp(id=pid,code=code,name=name,cat=cat,owner=owner,genre=genre,price=price,stock=stock,settle='개인' if personal(code,owner) else '공동',
            logs=[])
+# 사진: pjuhe99/bandsustain-comicworld public/products (카탈로그 번호 매핑 그대로) → prototype/products/<id>.jpg
+import os
+PHOTO_DIR=os.path.join(os.path.dirname(os.path.abspath(__file__)),'../../prototype/products')
+for p in products:
+    if p['id'].startswith('s') and os.path.exists(os.path.join(PHOTO_DIR,p['id']+'.jpg')): p['photo']='products/'+p['id']+'.jpg'
+# 원본 앱 상품표에 있던 특전 2종 (판매 기록 없음, 초기 수량만)
+for pid,name,owner,q in [('s_setc_pin','세트 C 한정 핀뱃지','공동',5),('s_sway_sticker','인스타 팔로우 특전 · SWAY 스티커','한재민',30)]:
+    addp(id=pid,code='특전',name=name,cat='특전',owner=owner,genre='특전',price=0,stock=q,settle='공동' if owner=='공동' else '개인',memo='원본 상품표의 초기 수량 (남은 수량 기록 없음)',logs=[])
+    if os.path.exists(os.path.join(PHOTO_DIR,pid+'.jpg')): products[-1]['photo']='products/'+pid+'.jpg'
 # 서코는 결제별 기록이 없음 → 상품별 판매량·결제수단 합계·세트 할인 합계만 사용 (임의 결제 생성 안 함)
 seoco_base={sid[c]:sold for c,_,_,_,_,_,sold,_ in SP if sold}
 seoco=dict(id='seoco0823',title='8월 서코 일요일',big='서코',cap='코믹월드',date='2026. 8.',dateNote='일요일 · 정확한 날짜 미입력',

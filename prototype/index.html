@@ -1633,6 +1633,30 @@ h1,h2,h3,.fold-body h3,.ccard b,.gcard b,.cd-info h1{word-break:keep-all}
 .thpop b{font-size:13px;line-height:1.35}.thpop b em{font-style:normal;color:var(--muted);font-weight:600}
 .thpop>small{font-size:12px;color:var(--sub)}
 .thpop .thpop-n{font-size:11px;color:var(--muted)}
+.owntabs{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:16px 0 0;border-bottom:1px solid var(--line)}
+.owntabs [role=tab]{height:42px;padding:0 14px;font-size:15px;font-weight:700;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.owntabs [role=tab][aria-selected=true]{color:var(--fg);border-color:var(--fg)}
+.owntabs [role=tab][disabled]{opacity:.45;cursor:not-allowed}
+.owntabs [role=tab] span{font-size:12px;color:var(--muted);font-weight:600}
+.mesel{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--sub);padding-bottom:6px}
+.mesel select{height:30px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:12px;padding:0 6px;background:var(--bg)}
+.mesel b{font-size:13px;color:var(--fg)}
+.mesel.need{color:var(--brand);font-weight:700}
+.stchips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:12px}
+.stchips button{height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--sub);background:var(--bg)}
+.stchips button span{color:var(--muted);font-weight:500;margin-left:2px}
+.stchips button[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.stchips button[aria-pressed=true] span{color:#bbb}
+.stchips small{font-size:12px;color:var(--muted);margin-left:4px}
+.otag,.sttag{font-style:normal;font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:1px}
+.otag{background:#eef0ff;color:#4b55c8}
+.sttag{background:var(--hover);color:var(--sub)}
+.sttag.st-soldout{background:var(--brand-soft);color:var(--brand)}
+.sttag.st-disposed{background:#fdecec;color:#c23b3b}
+.frame[data-device="mobile"] .mesel{margin-left:0;width:100%;padding:6px 0}
+.inv .ctab2{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-right:-4px;padding-bottom:2px;-webkit-mask-image:linear-gradient(90deg,#000 92%,transparent)}
+.inv .ctab2::-webkit-scrollbar{display:none}
+.inv .ctab2 .chip{flex:none}
 </style>
 
 <div class="devbar" role="group" aria-label="기기 미리보기">
@@ -1750,15 +1774,23 @@ const events = [
 ];
 const S = {prep:'준비 중',live:'운영 중',done:'완료'};
 const clone = o => JSON.parse(JSON.stringify(o));
-const DATASETS = { demo:{ user:{id:'demo',name:'데모',booth:'예시 부스'}, products:clone(products), events:clone(events) } };
+const isLive = p => !p.deleted && !['returned','disposed','deleted'].includes(p.status);
+const pStatus = p => p.deleted||p.status==='deleted' ? 'deleted' : p.status==='returned' ? 'returned' : p.status==='disposed' ? 'disposed' : p.stock<=0 ? 'soldout' : 'active';
+const ST_LABEL = {active:'판매 중',soldout:'소진',returned:'반환',disposed:'폐기',deleted:'삭제'};
+const meNames = () => (ui.user && ui.me && ui.me[ui.user.id]) || (ui.user && ui.user.me) || [];
+const isMine = p => meNames().includes(p.owner);
+function invList(withStatus=true){ const f=ui.inv, me=meNames();
+  return products.filter(p=>(!withStatus||(f.st||'active')===pStatus(p)) && (f.own==='all'||!f.own||!me.length||(f.own==='mine'?me.includes(p.owner):!me.includes(p.owner)))
+    && (f.cat==='전체'||p.cat===f.cat)&&(f.owner==='전체'||p.owner===f.owner)&&(f.genre==='전체'||p.genre===f.genre)&&nameMatch(p,f.q.trim())); }
+const DATASETS = { demo:{ user:{id:'demo',name:'데모',booth:'예시 부스',me:['서진']}, products:clone(products), events:clone(events) } };
 if(typeof ACCOUNT_TEST1234!=='undefined') DATASETS.test1234 = ACCOUNT_TEST1234;
 const ACCOUNTS = { test1234:'test1234' };
 function loadData(key){
   const d=DATASETS[key]; if(!d) return false;
   products.splice(0,products.length,...clone(d.products)); events.splice(0,events.length,...clone(d.events));
   const cats=[...new Set(products.filter(p=>!p.deleted).map(p=>p.cat))]; CATS.splice(0,CATS.length,...cats);
-  ui.user=d.user; ui.lines=[]; ui.selLine=null; ui.tab={}; ui.filter='all'; ui.ptab='즐겨찾기'; ui.discount=0;
-  ui.inv={...ui.inv,q:'',owner:'전체',genre:'전체',cat:'전체',page:1,sel:{}}; ui.pf={...ui.pf,q:'',owner:'전체',genre:'전체'};
+  ui.user=d.user; try{ const m=localStorage.getItem('lb-me-'+d.user.id); if(m){ ui.me=ui.me||{}; ui.me[d.user.id]=[m]; } }catch(_){} ui.lines=[]; ui.selLine=null; ui.tab={}; ui.filter='all'; ui.ptab='즐겨찾기'; ui.discount=0;
+  ui.inv={...ui.inv,q:'',owner:'전체',genre:'전체',cat:'전체',page:1,sel:{},own:'all',st:'active',select:false,confirmDel:false}; ui.pf={...ui.pf,q:'',owner:'전체',genre:'전체'};
   return true;
 }
 const payMix = e => { const m={}; if(e.payReal){ for(const k in e.payReal) m[k]={...e.payReal[k]}; e.sales.forEach(x=>{ const k=x.pay; m[k]=m[k]||{amt:0,n:0}; m[k].amt+=x.total; m[k].n++; }); return m; } if(e.sales.length&&!Object.keys(e.base).length){ e.sales.forEach(x=>{ const k=x.pay; m[k]=m[k]||{amt:0,n:0}; m[k].amt+=x.total; m[k].n++; }); }
@@ -1900,7 +1932,7 @@ function wizardModal(){
         <div class="wadd"><input id="wcNew" placeholder="준비물 추가 (예: 조명)"><button class="btn btn-out btn-sm" style="height:38px" data-wcadd="1">추가</button></div></div>
       <div class="wsec"><h3>가져갈 상품 <small class="tn">${on.length}종 · ${tot}개</small></h3>
         ${searchFilter('pf',false)}
-        <ul class="witems">${products.filter(p=>!p.deleted&&matchF(p,ui.pf)).map(p=>{const it=w.items[p.id];return `<li class="${it.on?'':'off'}"><input type="checkbox" data-witem="${p.id}" ${it.on?'checked':''} aria-label="${p.name} 가져가기"><span class="th40" style="background:${p.tone}">${ic[p.ic]}</span><span><b>${p.name}</b><small>${p.owner} · ${p.genre} · 재고 ${p.stock}</small><small class="why">${it.why}</small></span><span class="stepper"><button data-wq="${p.id}|-1" aria-label="빼기">−</button><span class="tn" style="min-width:22px;text-align:center">${it.q}</span><button data-wq="${p.id}|1" aria-label="더하기">+</button></span></li>`}).join('')}</ul></div>`;
+        <ul class="witems">${products.filter(p=>isLive(p)&&matchF(p,ui.pf)).map(p=>{const it=w.items[p.id];return `<li class="${it.on?'':'off'}"><input type="checkbox" data-witem="${p.id}" ${it.on?'checked':''} aria-label="${p.name} 가져가기"><span class="th40" style="background:${p.tone}">${ic[p.ic]}</span><span><b>${p.name}</b><small>${p.owner} · ${p.genre} · 재고 ${p.stock}</small><small class="why">${it.why}</small></span><span class="stepper"><button data-wq="${p.id}|-1" aria-label="빼기">−</button><span class="tn" style="min-width:22px;text-align:center">${it.q}</span><button data-wq="${p.id}|1" aria-label="더하기">+</button></span></li>`}).join('')}</ul></div>`;
     foot=`<button class="btn btn-gray" data-wprev="1">이전</button><button class="btn btn-blk" data-wnext="1">다음 · 가설 제안</button>`;
   } else {
     body=`<div class="wsec"><h3>가설도 해볼까요? <small>건너뛰어도 돼요</small></h3>
@@ -2013,10 +2045,10 @@ function eventView(id){
 function statRow(e){ const r=revenue(e),o=orders(e)||1; return `<div class="stat4"><div data-k="rev"><small>매출</small><b class="tn">${won(r)}</b></div><div><small>주문</small><b class="tn">${orders(e)}건</b></div><div><small>객단가</small><b class="tn">${e.status==='prep'?'—':won(Math.round(r/o/10)*10)}</b></div><div><small>방문</small><b class="tn">${visTxt(e)}</b></div></div>`; }
 const notesPanel = (e,title) => `<div class="panel"><h3>${title} <span class="tn" style="font-size:12px;color:var(--muted);font-weight:500">${e.notes.length}개</span></h3><ul class="notes">${e.notes.slice().reverse().map(n=>`<li><time class="tn">${n.at}</time><span><span class="k">${n.k}</span>${n.t}</span></li>`).join('')||'<li><time></time><span style="color:var(--muted)">아직 메모가 없어요.</span></li>'}</ul></div>`;
 function evItems(e){ if(!e.items) e.items=products.filter(p=>!p.deleted).map(p=>({id:p.id,q:Math.min(10,p.stock)})); return e.items; }
-const imVisible = () => products.filter(p=>!p.deleted&&matchF(p,{owner:ui.im.owner,genre:ui.im.genre})&&nameMatch(p,ui.im.q.trim()));
+const imVisible = () => products.filter(p=>isLive(p)&&matchF(p,{owner:ui.im.owner,genre:ui.im.genre})&&nameMatch(p,ui.im.q.trim()));
 function itemsModal(){
   if(!ui.im) return '';
-  const m=ui.im, e=E(m.eid), vis=imVisible(), on=products.filter(p=>!p.deleted&&m.items[p.id]?.on), tot=on.reduce((a,p)=>a+m.items[p.id].q,0), allOn=vis.length&&vis.every(p=>m.items[p.id].on);
+  const m=ui.im, e=E(m.eid), vis=imVisible(), on=products.filter(p=>isLive(p)&&m.items[p.id]?.on), tot=on.reduce((a,p)=>a+m.items[p.id].q,0), allOn=vis.length&&vis.every(p=>m.items[p.id].on);
   return `<div class="modal-bg" data-imclose="1"></div><section class="modal pm" role="dialog" aria-modal="true" aria-labelledby="imT">
     <div class="pm-scroll">
       <h2 id="imT" style="margin-bottom:4px">반입 상품 고르기</h2>
@@ -2037,7 +2069,7 @@ function itemsModal(){
 }
 function itemsBlock(e){
   const items = e.items || products.filter(p=>!p.deleted).map(p=>({id:p.id,q:Math.min(10,p.stock)})), editing = false, done = e.status==='done';
-  const rest = products.filter(p=>!p.deleted && !items.some(i=>i.id===p.id));
+  const rest = products.filter(p=>isLive(p) && !items.some(i=>i.id===p.id));
   return `<h3>반입 상품 <span class="tn" style="font-size:12px;color:var(--muted);font-weight:500;margin-right:auto;margin-left:6px">${items.length}종 · ${items.reduce((a,i)=>a+i.q,0)}개</span>${done?'':`<button class="btn btn-sm btn-out" data-iedit="${e.id}">수정</button>`}</h3>
     <ul class="rows">${items.map(i=>{const p=P(i.id);return `<li data-pid="${i.id}" class="irw"><span class="irw-l"><span class="irw-th">${p.photo?`<img src="${p.photo}" alt="">`:ic[p.ic]||''}</span><span class="irw-t"><b>${p.name}</b><small>${p.owner} · ${p.genre}</small></span></span>${editing?`<span class="stepper"><button data-iq="${i.id}|-1" aria-label="${qa(p.name)} 수량 빼기">−</button><span class="tn" style="min-width:26px;text-align:center">${i.q}</span><button data-iq="${i.id}|1" aria-label="${qa(p.name)} 수량 더하기">+</button><button data-irm="${i.id}" aria-label="${qa(p.name)} 빼기" style="border:0;color:var(--muted)">×</button></span>`:`<span class="irw-r tn"><b>${won(p.price)}</b><em>${i.q}개</em></span>`}</li>`}).join('')||'<li><span style="color:var(--muted)">가져갈 상품이 없어요.</span></li>'}</ul>
     ${editing?`<div class="iadd"><select id="iaddSel" aria-label="추가할 상품"><option value="">재고에서 상품 추가…</option>${rest.map(p=>`<option value="${p.id}">${p.name} · ${p.owner} · 재고 ${p.stock}</option>`).join('')}</select><button class="btn btn-sm btn-out" data-iadd="${e.id}">추가</button></div>
@@ -2088,8 +2120,8 @@ function posBody(e){
   const t=tally(e), lines=ui.lines, sel=lines.find(l=>l.id===ui.selLine);
   const inCart=id=>lines.filter(l=>l.pid===id).reduce((a,l)=>a+l.q,0);
   const inEv = e.items ? e.items.map(i=>i.id) : products.map(p=>p.id);
-  const tabs=['즐겨찾기',...CATS.filter(c=>products.some(p=>!p.deleted&&p.cat===c&&inEv.includes(p.id)))];
-  const shown=products.filter(p=>!p.deleted&&inEv.includes(p.id)&&(ui.ptab==='즐겨찾기'?p.fav:p.cat===ui.ptab)&&matchF(p,{...ui.pf,q:''})&&nameMatch(p,ui.pf.q.trim()));
+  const tabs=['즐겨찾기',...CATS.filter(c=>products.some(p=>isLive(p)&&p.cat===c&&inEv.includes(p.id)))];
+  const shown=products.filter(p=>isLive(p)&&inEv.includes(p.id)&&(ui.ptab==='즐겨찾기'?p.fav:p.cat===ui.ptab)&&matchF(p,{...ui.pf,q:''})&&nameMatch(p,ui.pf.q.trim()));
   const sub=lines.reduce((a,l)=>a+lineTotal(l),0), disc=Math.min(ui.discount,sub), qty=lines.reduce((a,l)=>a+l.q,0);
   const ICO={print:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 3h10v4H7zM5 8h14a2 2 0 0 1 2 2v6h-4v4H7v-4H3v-6a2 2 0 0 1 2-2zm4 8v2h6v-2z"/></svg>',trash:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 3h6l1 2h4v2H4V5h4zM6 9h12l-1 12H7z"/></svg>',mark:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4-6 4z"/></svg>'};
   const last=e.notes[e.notes.length-1];
@@ -2204,7 +2236,7 @@ async function excelTemplate(){
 }
 async function excelExport(){
   let X; try{ X=await loadExcel(); }catch(_){ toast('엑셀 도구를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'); return; }
-  const f=ui.inv, list=products.filter(p=>!p.deleted&&(f.cat==='전체'||p.cat===f.cat)&&(f.owner==='전체'||p.owner===f.owner)&&(f.genre==='전체'||p.genre===f.genre)&&nameMatch(p,f.q.trim()));
+  const f=ui.inv, list=invList();
   const wb=new X.Workbook(), ws=wb.addWorksheet('재고',{views:[{state:'frozen',ySplit:1}]});
   ws.columns=[['코드',10],['상품명',28],['카테고리',14],['소유자',16],['장르',12],['가격',10],['원가',10],['재고',8],['재고 금액',12],['정산',8],['메모',30]].map(([h,w])=>({header:h,width:w}));
   list.forEach(p=>ws.addRow([p.code||p.id,p.name,p.cat,p.owner,p.genre,p.price,p.cost||0,p.stock,p.price*p.stock,p.settle||'개인',p.memo||'']));
@@ -2295,7 +2327,7 @@ async function reviewExcel(e){
 }
 /* 판매 순위 표 */
 const prevEv = e => { const d=evDate(e); return events.filter(x=>x!==e&&x.status!=='prep'&&evDate(x)&&evDate(x)<d).sort((a,b)=>evDate(b)-evDate(a))[0]||null; };
-function optTally(ev){ const t={}; if(ev.optBase) for(const k in ev.optBase) t[k]=ev.optBase[k]; else { const n=Object.values(ev.base).reduce((a,b)=>a+b,0); if(n){ t['선물 포장']=Math.round(n*.14); t['쇼핑백']=Math.round(n*.22); } }
+function optTally(ev){ const t={}; if(ev.optBase) for(const k in ev.optBase) t[k]=ev.optBase[k]; else if(ui.user&&ui.user.id==='demo'&&!ev.noTime){ /* 데모 예시 행사만 예시 옵션 수치 */ const n=Object.values(ev.base).reduce((a,b)=>a+b,0); if(n){ t['선물 포장']=Math.round(n*.14); t['쇼핑백']=Math.round(n*.22); } }
   ev.sales.forEach(s=>{ if(s.opts) for(const k in s.opts) t[k]=(t[k]||0)+s.opts[k]; }); return t; }
 function rankRows(ev, tab){
   const t=tally(ev), gross=Object.entries(t).reduce((a,[k,v])=>a+P(k).price*v,0), f=1; /* 할인은 상품별로 나누지 않고 합계에서만 뺌 */
@@ -2328,7 +2360,7 @@ function rankTable(e){
       <div class="rk-r rk-sum" role="row"><span></span><span class="rk-name"><b>합계</b><small>${rows.length}개 ${r.tab==='상품'?'상품':r.tab}</small></span><span class="tn"><small>총 판매</small><b>${rows.reduce((a,x)=>a+x.qty,0)}개</b></span><span class="tn"><small>총 매출</small><b>${won(totAmt)}</b></span><span class="tn"><small>순수익 · 마진 ${pct(totNet,totAmt)}%</small><b class="rk-big">${won(totNet)}</b></span></div>
     </div>
     <p class="tc-cap">상품별 순수익 = 판매금액 − 원가. 할인은 상품별로 나누지 않고 합계 순수익에서만 빼요.${tcost?' 원가는 재고 관리에서 상품마다 입력한 값이에요.':' 이 행사 상품은 원가가 입력되지 않아 원가를 0원으로 계산했어요.'}</p>`
-    :`<p style="color:var(--muted);font-size:14px">${r.tab==='옵션'?'옵션이 붙은 판매가 없어요.':'판매 기록이 없어요.'}</p>`}
+    :`<p style="color:var(--muted);font-size:14px">${r.tab==='옵션'?(e.noTime||!e.sales.length?'이 행사엔 옵션 판매 기록이 없어요.':'옵션이 붙은 판매가 없어요.'):'판매 기록이 없어요.'}</p>`}
   </section>`;
 }
 
@@ -2593,7 +2625,8 @@ function records(){
 /* ---------- 재고 관리 ---------- */
 function stock(){
   const f=ui.inv;
-  let list=products.filter(p=>!p.deleted&&(f.cat==='전체'||p.cat===f.cat)&&(f.owner==='전체'||p.owner===f.owner)&&(f.genre==='전체'||p.genre===f.genre)&&nameMatch(p,f.q.trim()));
+  let list=invList();
+  const me=meNames(), base=invList(false), stc=k=>base.filter(p=>pStatus(p)===k).length, ownAll=products.filter(p=>(f.cat==='전체'||p.cat===f.cat)&&nameMatch(p,f.q.trim()));
   const SORT={'최신 순':(a,b)=>b.created-a.created,'이름 순':(a,b)=>a.name.localeCompare(b.name,'ko'),'가격 높은 순':(a,b)=>b.price-a.price,'재고 적은 순':(a,b)=>a.stock-b.stock,'직접 정렬':()=>0};
   list=list.slice().sort(SORT[f.reorder?'직접 정렬':f.sort]);
   const pages=Math.max(1,Math.ceil(list.length/f.per)); f.page=Math.min(Math.max(1,f.page),pages);
@@ -2606,6 +2639,11 @@ function stock(){
     <div class="ih"><h1>상품</h1>
       <label class="sbox isearch">${SEARCH_IC}<input id="q-inv" data-q="inv" value="${qa(f.q)}" placeholder="상품명 또는 초성 검색" autocomplete="off"></label>
       <div class="ih-r"><span class="more-w split"><button class="btn btn-out split-main" data-toast="엑셀 업로드 자리 (양식에 맞춰 채운 파일을 올려요)">엑셀 업로드</button><button class="btn btn-out split-arrow" data-xlmore="1" aria-haspopup="menu" aria-expanded="${!!ui.xlMore}" aria-label="엑셀 메뉴 열기"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></button>${ui.xlMore?`<span class="more-m" role="menu"><button role="menuitem" data-xl="tpl"><b>양식 내려받기</b><small>${ui.inv.cat!=='전체'?`'${ui.inv.cat}' 카테고리로 채운 `:''}등록용 빈 양식</small></button><button role="menuitem" data-xl="exp"><b>엑셀 내려받기</b><small>지금 보이는 목록을 엑셀로</small></button></span>`:''}</span><button class="btn btn-blk" data-pnew="1">+ 상품 추가</button></div></div>
+    <div class="owntabs" role="tablist" aria-label="소유">
+      ${[['all','전체'],['mine','내 굿즈'],['consign','위탁']].map(([k,l])=>`<button role="tab" aria-selected="${(f.own||'all')===k}" data-own="${k}" ${k!=='all'&&!me.length?'disabled title="내 이름을 먼저 골라 주세요"':''}>${l}${me.length?` <span class="tn">${k==='all'?ownAll.length:ownAll.filter(p=>k==='mine'?me.includes(p.owner):!me.includes(p.owner)).length}</span>`:''}</button>`).join('')}
+      <label class="mesel ${me.length?'':'need'}">내 이름<select data-me="1"><option value="">${me.length?'바꾸기…':'고르기'}</option>${uniq('owner').map(o=>`<option ${me.includes(o)?'selected':''}>${o}</option>`).join('')}</select>${me.length?`<b>${me.join(', ')}</b>`:''}</label>
+    </div>
+    <div class="stchips" role="group" aria-label="상태">${['active','soldout','returned','disposed','deleted'].map(k=>`<button aria-pressed="${(f.st||'active')===k}" data-st="${k}" class="st-${k}">${ST_LABEL[k]} <span class="tn">${stc(k)}</span></button>`).join('')}<small>${(f.st||'active')==='soldout'?'재고가 0이 되면 자동으로 여기로 와요':(f.st||'active')==='active'?'선택해서 반환·폐기·삭제로 정리할 수 있어요':'정리된 상품도 지난 판매·정산 기록에는 그대로 남아요'}</small></div>
     <div class="chips ctab2" role="group" aria-label="카테고리">${['전체',...CATS].map(c=>`<button class="chip" aria-pressed="${f.cat===c}" data-icat="${c}">${c}</button>`).join('')}</div>
     <div class="itools">
       <select data-isort aria-label="정렬" ${f.reorder?'disabled':''}>${['최신 순','이름 순','가격 높은 순','재고 적은 순'].map(o=>`<option ${f.sort===o?'selected':''}>${o}</option>`).join('')}</select>
@@ -2614,15 +2652,15 @@ function stock(){
       <label class="fsel ${f.genre!=='전체'?'on':''}">장르<select data-fsel="inv|genre">${['전체',...uniq('genre')].map(v=>`<option ${f.genre===v?'selected':''}>${v}</option>`).join('')}</select></label>
       ${act?'<button class="tbtn" data-freset="inv">필터 초기화</button>':''}
       <span style="flex:1"></span>
-      ${f.select?`<span class="selbar"><b class="tn">${nsel}개 선택</b><button class="tbtn danger" data-bulk="delete" ${nsel?'':'disabled'}>삭제</button><button class="tbtn" data-bulk="cancel">취소</button></span>`:'<button class="tbtn" data-bulk="start">선택 삭제</button>'}
+      ${f.select?`<span class="selbar"><b class="tn">${nsel}개 선택</b>${(f.st||'active')==='active'||(f.st||'active')==='soldout'?['returned','disposed','deleted'].map(k=>`<button class="tbtn ${k==='deleted'?'danger':''}" data-bulk="ask|${k}" ${nsel?'':'disabled'}>${ST_LABEL[k]}</button>`).join(''):`<button class="tbtn" data-bulk="ask|active" ${nsel?'':'disabled'}>판매 중으로 되돌리기</button>`}<button class="tbtn" data-bulk="cancel">취소</button></span>`:'<button class="tbtn" data-bulk="start">선택해서 정리</button>'}
     </div>
-    ${f.confirmDel?`<div class="confirmdel"><span>선택한 상품 ${nsel}개를 삭제할까요? 지난 판매 기록은 남아요.</span><button class="btn btn-sm btn-blk" data-bulk="delyes">삭제</button><button class="btn btn-sm btn-gray" data-bulk="delno">취소</button></div>`:''}
+    ${f.confirmDel?(()=>{const ids=Object.keys(f.sel).filter(k=>f.sel[k]), left=ids.reduce((a,id)=>a+(P(id)?.stock||0),0), k=f.confirmDel, msg={returned:`남은 재고 ${left}개를 소유자에게 돌려준 것으로 기록하고 0으로 맞춰요.`,disposed:`남은 재고 ${left}개를 폐기(손실)로 기록하고 0으로 맞춰요.`,deleted:'목록과 판매 화면에서 숨겨요. 재고 수량은 그대로 두고 언제든 되돌릴 수 있어요.',active:'다시 판매 중 목록으로 돌려놓아요.'}[k]; return `<div class="confirmdel"><span><b>${ids.length}개를 ${ST_LABEL[k]}${k==='active'?'':' 처리'}할까요?</b> ${msg} 지난 판매·정산 기록은 남아요.</span><button class="btn btn-sm btn-blk" data-bulk="do|${k}">${ST_LABEL[k]}${k==='active'?'':' 처리'}</button><button class="btn btn-sm btn-gray" data-bulk="delno">취소</button></div>`;})():''}
     <div class="itbl" style="--cols:${cols}">
       <style>.frame[data-device="mobile"] .itbl{--cols:${mcols}!important}</style>
       <div class="ithead">${f.select?`<input type="checkbox" data-selall aria-label="전체 선택" ${shown.length&&shown.every(p=>f.sel[p.id])?'checked':''}>`:''}<span>상품(총 ${list.length}개)</span><span>소유자</span><span>장르</span><span>남은재고</span>${f.reorder?'<span>순서</span>':''}</div>
       ${shown.map(p=>`<div class="irow">
         ${f.select?`<input type="checkbox" data-sel="${p.id}" ${f.sel[p.id]?'checked':''} aria-label="${qa(p.name)} 선택">`:''}
-        <button class="icell" data-pedit="${p.id}">${thumb(p)}<span class="in"><span class="nm">${p.name}${p.tag!=='없음'?`<em class="ptag">${p.tag}</em>`:''}</span><span class="pr tn">${price(p)}</span><small class="tn">${p.owner} · ${p.genre} · ${p.cat} · 재고 ${p.stock}</small></span></button>
+        <button class="icell" data-pedit="${p.id}">${thumb(p)}<span class="in"><span class="nm">${p.name}${p.tag&&p.tag!=='없음'?`<em class="ptag">${p.tag}</em>`:''}${me.length&&!me.includes(p.owner)?'<em class="otag">위탁</em>':''}${pStatus(p)!=='active'?`<em class="sttag st-${pStatus(p)}">${ST_LABEL[pStatus(p)]}</em>`:''}</span><span class="pr tn">${price(p)}</span><small class="tn">${p.owner} · ${p.genre} · ${p.cat} · 재고 ${p.stock}</small></span></button>
         <button class="icol" data-f="inv|owner|${qa(p.owner)}" title="${qa(p.owner)}만 보기">${p.owner}</button>
         <button class="icol" data-f="inv|genre|${qa(p.genre)}" title="${qa(p.genre)}만 보기">${p.genre}</button>
         <span class="iqty tn ${p.stock<=10?'low-s':''}">${p.stock}</span>
@@ -2927,7 +2965,7 @@ document.addEventListener('click',ev=>{
   if(d.imtog){ const it=ui.im.items[d.imtog]; it.on=!it.on; route(); return; }
   if(d.imq){ const [id,dv]=d.imq.split('|'), it=ui.im.items[id]; const st=P(id).stock; it.q=Math.max(1,Math.min(st,it.q+ +dv)); it.on=true; route(); return; }
   if(d.imall){ const vis=imVisible(); const allOn=vis.every(p=>ui.im.items[p.id].on); vis.forEach(p=>ui.im.items[p.id].on=!allOn); route(); return; }
-  if(d.imsave){ const e2=E(ui.im.eid); e2.items=products.filter(p=>!p.deleted&&ui.im.items[p.id]?.on).map(p=>({id:p.id,q:ui.im.items[p.id].q})); const n=e2.items.length; ui.im=null; route(); toast(`반입 상품 ${n}종을 저장했어요`); return; }
+  if(d.imsave){ const e2=E(ui.im.eid); e2.items=products.filter(p=>isLive(p)&&ui.im.items[p.id]?.on).map(p=>({id:p.id,q:ui.im.items[p.id].q})); const n=e2.items.length; ui.im=null; route(); toast(`반입 상품 ${n}종을 저장했어요`); return; }
   if(d.iq){ const e2=curEvent(), [id,dv]=d.iq.split('|'), it=evItems(e2).find(i=>i.id===id); it.q=Math.max(1,it.q+ +dv); route(); return; }
   if(d.irm){ const e2=curEvent(); e2.items=evItems(e2).filter(i=>i.id!==d.irm); route(); return; }
   if(d.iadd){ const v=$('#iaddSel').value; if(!v){ toast('추가할 상품을 골라 주세요'); return; } evItems(E(d.iadd)).push({id:v,q:Math.min(10,P(v).stock)||1}); route(); return; }
@@ -2941,7 +2979,13 @@ document.addEventListener('click',ev=>{
     if(d.bulk==='start'){ f.select=true; f.sel={}; f.confirmDel=false; }
     else if(d.bulk==='cancel'){ f.select=false; f.sel={}; f.confirmDel=false; }
     else if(d.bulk==='soldout'){ ids.forEach(id=>P(id).soldout=true); toast(`${ids.length}개를 품절로 표시했어요`); f.select=false; f.sel={}; }
-    else if(d.bulk==='delete'){ f.confirmDel=true; }
+    else if(d.bulk.startsWith('ask|')){ f.confirmDel=d.bulk.slice(4); }
+    else if(d.bulk.startsWith('do|')){ const k=d.bulk.slice(3), at=(()=>{const n=new Date(Date.now()+9*3600e3);return `${n.getUTCMonth()+1}. ${n.getUTCDate()}. ${n.toISOString().slice(11,16)}`;})();
+      ids.forEach(id=>{ const p=P(id); if(!p) return; p.logs=p.logs||[];
+        if(k==='returned'||k==='disposed'){ if(p.stock) p.logs.push({at,type:ST_LABEL[k],q:-p.stock,left:0}); p.stock=0; p.status=k; p.deleted=false; }
+        else if(k==='deleted'){ p.status='deleted'; p.deleted=true; p.logs.push({at,type:'삭제(숨김)',q:0,left:p.stock}); }
+        else { p.status='active'; p.deleted=false; p.logs.push({at,type:'판매 중으로 되돌림',q:0,left:p.stock}); } });
+      toast(`${ids.length}개를 ${ST_LABEL[k]}${k==='active'?'(으)로 되돌렸어요':' 처리했어요'}`); f.select=false; f.sel={}; f.confirmDel=false; }
     else if(d.bulk==='delno'){ f.confirmDel=false; }
     else if(d.bulk==='delyes'){ ids.forEach(id=>P(id).deleted=true); toast(`${ids.length}개를 삭제했어요`); f.select=false; f.sel={}; f.confirmDel=false; }
     route(); return; }
@@ -2978,6 +3022,8 @@ document.addEventListener('click',ev=>{
   if(d.guide){ ev.preventDefault(); $('#acctMenu')&&($('#acctMenu').hidden=true); frame.classList.remove('drawer'); guideGo(0); return; }
   if(d.gstep){ guideGo(ui.guide.i + +d.gstep); return; }
   if(d.gend){ guideGo(-1); return; }
+  if(d.own){ ui.inv.own=d.own; ui.inv.page=1; route(); return; }
+  if(d.st){ ui.inv.st=d.st; ui.inv.page=1; ui.inv.select=false; ui.inv.sel={}; ui.inv.confirmDel=false; route(); return; }
   if(d.xlmore){ ui.xlMore=!ui.xlMore; route(); return; }
   if(d.xl){ ui.xlMore=false; route(); d.xl==='tpl'?excelTemplate():excelExport(); return; }
   if(d.rvxl){ reviewExcel(E(d.rvxl)); return; }
@@ -3036,6 +3082,7 @@ document.addEventListener('click',ev=>{
 document.addEventListener('change',ev=>{
   const t=ev.target;
   if(t.dataset.rp){ ui.rp[t.dataset.rp]=t.value; ui.rp.k='custom'; if(ui.rp.from&&ui.rp.to) ui.rpOpen=false; route(); return; }
+  if(t.dataset.me){ if(t.value){ ui.me=ui.me||{}; ui.me[ui.user.id]=[t.value]; try{localStorage.setItem('lb-me-'+ui.user.id,t.value)}catch(_){} toast(`'${t.value}' 상품을 내 굿즈로 볼게요`); } route(); return; }
   if(t.dataset.rksort){ ui.rk.sort=t.value; route(); return; }
   if(t.dataset.fsel){ const [sc,k]=t.dataset.fsel.split('|'); ui[sc][k]=t.value; if(sc==='inv') ui.inv.page=1; route(); return; }
   if(t.id==='wThumb' && t.files[0] && ui.wiz){ const r=new FileReader(); r.onload=()=>{ ui.wiz.thumb=r.result; route(); }; r.readAsDataURL(t.files[0]); return; }
@@ -3052,9 +3099,12 @@ document.addEventListener('change',ev=>{
   if('caly' in t.dataset){ ui.cal.y=+t.value; route(); return; }
   if('calm' in t.dataset){ ui.cal.m=+t.value; route(); return; }
  const c=ev.target.closest('[data-ck]'); const e=curEvent(); if(c&&e){ e.checklist[+c.dataset.ck].d=c.checked; route(); } });
+/* 한글 입력(IME) 조합 중에는 다시 그리지 않음 */
+document.addEventListener('compositionstart',ev=>{ if(ev.target.dataset&&ev.target.dataset.q) ev.target._composing=true; });
+document.addEventListener('compositionend',ev=>{ const t=ev.target; if(t.dataset&&t.dataset.q){ t._composing=false; t.dispatchEvent(new Event('input',{bubbles:true})); } });
 document.addEventListener('input',ev=>{
   const t=ev.target;
-  if(t.dataset.q){ const sc=t.dataset.q, pos=t.selectionStart; ui[sc].q=t.value; route(); const n=$('#q-'+sc); if(n){ n.focus(); n.setSelectionRange(pos,pos); } }
+  if(t.dataset.q){ const sc=t.dataset.q; ui[sc].q=t.value; if(ev.isComposing||t._composing) return; const pos=t.selectionStart; route(); const n=$('#q-'+sc); if(n){ n.focus(); n.setSelectionRange(pos,pos); } }
   else if(t.dataset.w && ui.wiz){ ui.wiz[t.dataset.w]=t.value; }
   else if(t.dataset.pd && ui.pd){ ui.pd[t.dataset.pd]=t.value;
     if(t.dataset.pd==='name') $('#pmPrev').textContent=t.value||'상품이름';
