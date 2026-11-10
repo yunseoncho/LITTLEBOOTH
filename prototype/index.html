@@ -2267,6 +2267,9 @@ async function reviewExcel(e){
   const tx=csvRows(e,'tx');
   if(tx.length>1){ table(s4,2,tx,{money:[7,9,10,11],int:[8],text:[0,3]}); s4.autoFilter={from:{row:2,column:1},to:{row:2,column:tx[0].length}};
     /* 콜아웃: 주문 결제금액(L) 열만 노란색 · 같은 주문은 병합 + 가운데 정렬 */
+    /* 주문 단위로 배경색 번갈아 (같은 주문 = 같은 색) */
+    { let g=0; for(let rr=3; rr<=tx.length+1; rr++){ if(rr>3 && tx[rr-2][0]!==tx[rr-3][0]) g++; const last = rr===tx.length+1 || tx[rr-1][0]!==tx[rr-2][0];
+      for(let col=1; col<=tx[0].length; col++){ if(col===12) continue; const c=s4.getCell(rr,col); c.fill=fill(g%2?'FFF1F1F4':'FFFFFFFF'); c.border={bottom:{style:last?'thin':'hair',color:{argb:last?'FFC9C9CF':LINE}}}; } } }
     const L=12, hd=s4.getCell(2,L); hd.fill=fill('FFFFD54F'); hd.font={bold:true,color:{argb:BLK}}; hd.alignment={horizontal:'center',vertical:'middle'};
     let st=3; for(let rr=3; rr<=tx.length+2; rr++){ const end = rr>tx.length+1 || tx[rr-2][0]!==tx[st-2][0];
       if(end){ const top=s4.getCell(st,L), v=top.value; if(rr-1>st) s4.mergeCells(st,L,rr-1,L);
