@@ -2208,7 +2208,8 @@ async function reviewExcel(e){
         let val=(fmt.text||[]).includes(j)?v:num(v); if((fmt.pct||[]).includes(j)&&typeof val==='number') val=Math.round(val*10)/1000; c.value=val===''?null:val;
         c.border={bottom:{style:'thin',color:{argb:LINE}}};
         if((fmt.money||[]).includes(j)) c.numFmt='#,##0"원";-#,##0"원"'; else if((fmt.pct||[]).includes(j)) c.numFmt='0.0%'; else if((fmt.int||[]).includes(j)) c.numFmt='#,##0';
-        if(isNum(j)) c.alignment={horizontal:'right'}; });
+        if(isNum(j)) c.alignment={horizontal:'right'}; if((fmt.center||[]).includes(j)) c.alignment={horizontal:'center',vertical:'middle'}; });
+      if(i===0) row.forEach((v,j)=>{ if((fmt.center||[]).includes(j)) R.getCell(j+1).alignment={horizontal:'center',vertical:'middle'}; });
       if(i===0) R.height=22;
       if(i>0 && (opt.boldLast||0) && i>=rows.length-opt.boldLast) R.eachCell({includeEmpty:true},(c,j)=>{ if(j>row.length) return; c.font={bold:true}; c.fill=fill(GRY); if(i===rows.length-opt.boldLast) c.border={top:{style:'medium',color:{argb:BLK}},bottom:{style:'thin',color:{argb:LINE}}}; });
     });
@@ -2228,11 +2229,11 @@ async function reviewExcel(e){
   // 2) 품목·판매: 품목별 매출 · 판매 수익
   const s2=wb.addWorksheet('품목·판매'); widths(s2,[8,10,28,14,18,12,10,10,10,11,13,12,13]);
   r=title(s2,1,'품목별 매출');
-  r=table(s2,r,csvRows(e,'cat'),{int:[1,2],money:[3],pct:[4]},{boldLast:1});
+  r=table(s2,r,csvRows(e,'cat'),{int:[1,2],money:[3],pct:[4],center:[1]},{boldLast:1});
   r=title(s2,r,'판매 수익 (상품별)','상품별 순수익 = 판매금액 − 원가. 할인은 상품별로 나누지 않고 합계에서만 빼요.');
   const rk=csvRows(e,'rank'), d=rk.slice(1), sA=d.reduce((a,x)=>a+x[10],0), sN=d.reduce((a,x)=>a+x[12],0), sQ=d.reduce((a,x)=>a+x[7],0);
   rk.push(['합계','','','','','','',sQ,'','',sA,'100.0',sN]); if(disc) rk.push(['할인 차감 후','','','','','','','','','','','',sN-disc]);
-  table(s2,r,rk,{int:[0,7,8],money:[6,10,12],pct:[9,11],text:[1]},{boldLast:disc?2:1});
+  table(s2,r,rk,{int:[0,7,8],money:[6,10,12],pct:[9,11],text:[1],center:[0]},{boldLast:disc?2:1});
   // 3) 정산: 결제수단별 · 소유자별 · 요약 · 합계
   const s3=wb.addWorksheet('정산'); widths(s3,[22,24,10,30,11,10,14]);
   r=title(s3,1,'결제수단별 정산');
@@ -2254,11 +2255,14 @@ async function reviewExcel(e){
   s4.getCell('A1').value='판매 기록 (결제 시각순)'; s4.getCell('A1').font={bold:true,size:13};
   const tx=csvRows(e,'tx');
   if(tx.length>1){ table(s4,2,tx,{money:[7,9,10,11],int:[8],text:[0,3]}); s4.autoFilter={from:{row:2,column:1},to:{row:2,column:tx[0].length}};
-    /* 콜아웃: 결제일시(B), 상품금액(J) 열 노란색 */
-    [2,10].forEach(col=>{ for(let rr=2; rr<=tx.length+1; rr++){ const c=s4.getCell(rr,col);
-      if(rr===2){ c.fill=fill('FFFFD54F'); c.font={bold:true,color:{argb:BLK}}; }
-      else { c.fill=fill('FFFFF6CC'); if(c.value!=null&&c.value!=='') c.font={bold:true,color:{argb:BLK}}; } } });
-    s4.getColumn(2).width=21; s4.getColumn(10).width=13; }
+    /* 콜아웃: 주문 결제금액(L) 열만 노란색 · 같은 주문은 병합 + 가운데 정렬 */
+    const L=12, hd=s4.getCell(2,L); hd.fill=fill('FFFFD54F'); hd.font={bold:true,color:{argb:BLK}}; hd.alignment={horizontal:'center',vertical:'middle'};
+    let st=3; for(let rr=3; rr<=tx.length+2; rr++){ const end = rr>tx.length+1 || tx[rr-2][0]!==tx[st-2][0];
+      if(end){ const top=s4.getCell(st,L), v=top.value; if(rr-1>st) s4.mergeCells(st,L,rr-1,L);
+        const c=s4.getCell(st,L); c.value=v; c.fill=fill('FFFFF6CC'); c.font={bold:true,color:{argb:BLK}}; c.alignment={horizontal:'center',vertical:'middle'}; c.numFmt='#,##0"원"';
+        c.border={top:{style:'thin',color:{argb:'FFE8C547'}},bottom:{style:'thin',color:{argb:'FFE8C547'}},left:{style:'thin',color:{argb:'FFE8C547'}},right:{style:'thin',color:{argb:'FFE8C547'}}};
+        st=rr; } }
+    s4.getColumn(L).width=15; }
   else { const c=s4.getCell('A3'); c.value=e.noTime?`개별 결제 기록이 없는 행사예요. 결제 ${o}건의 결제수단별 합계만 남아 있어요.`:'결제 기록이 없어요.'; c.font={color:{argb:SUB}}; }
   const buf=await wb.xlsx.writeBuffer();
   await saveFile(`${fileBase(e)}_결과회고.xlsx`, new Blob([buf]));
