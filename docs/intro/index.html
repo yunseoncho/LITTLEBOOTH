@@ -1,0 +1,239 @@
+<title>리틀부스 프로젝트 소개</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;600;800&family=Montserrat:wght@800&display=swap">
+<style>
+/* 레이아웃: 좁은 본문 칼럼 + 넓게 펼치는 스크린샷, 행사 장부처럼 숫자는 표 정렬 */
+:root{
+  --bg:#ffffff; --fg:#141416; --sub:#55555c; --muted:#8e8e95; --line:#e6e6ea; --panel:#f5f5f7; --brand:#e5487f; --brand-soft:#fdeef3; --ink:#141416; --on-ink:#ffffff;
+  --f:"Gothic A1","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif; --mark:"Montserrat","Gothic A1",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121214;--fg:#f2f2f4;--sub:#b4b4ba;--muted:#86868d;--line:#2a2a2f;--panel:#1c1c20;--brand:#ff6b9c;--brand-soft:#3a1f29;--ink:#f2f2f4;--on-ink:#121214;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121214;--fg:#f2f2f4;--sub:#b4b4ba;--muted:#86868d;--line:#2a2a2f;--panel:#1c1c20;--brand:#ff6b9c;--brand-soft:#3a1f29;--ink:#f2f2f4;--on-ink:#121214;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f);font-size:16px;line-height:1.7;margin:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 80px}
+.wrap{max-width:1040px;margin:0 auto}
+.col{max-width:680px}
+h1,h2,h3{text-wrap:balance;line-height:1.3;margin:0}
+h2{font-size:26px;font-weight:800;letter-spacing:-.01em}
+h3{font-size:18px;font-weight:800}
+p{margin:0}
+.tn{font-variant-numeric:tabular-nums}
+a{color:var(--brand)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--brand);outline-offset:3px;border-radius:4px}
+/* 표지 */
+.cover{padding-block:56px 40px;border-bottom:1px solid var(--line);display:grid;gap:18px}
+.logo{font-family:var(--mark);font-size:20px;letter-spacing:.02em}
+.logo i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--brand);vertical-align:12px;margin-left:2px}
+.cover h1{font-size:clamp(30px,5vw,44px);font-weight:800;letter-spacing:-.02em}
+.cover h1 em{font-style:normal;color:var(--brand)}
+.lede{font-size:18px;color:var(--sub);max-width:640px}
+.facts{display:flex;flex-wrap:wrap;gap:8px}
+.facts span{font-size:13px;font-weight:600;background:var(--panel);border-radius:999px;padding:5px 12px;color:var(--sub)}
+/* 섹션 */
+section{padding-block:48px 8px;display:grid;gap:18px}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--brand)}
+.lead{color:var(--sub)}
+/* 문제 표 */
+.tbl{overflow-x:auto;border-top:2px solid var(--fg)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:15px}
+th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:700}
+td:first-child{font-weight:700;white-space:nowrap}
+/* 흐름 */
+.flow{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.flow li{border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:6px;min-width:0}
+.flow b{display:flex;align-items:center;gap:8px;font-size:16px}
+.flow b i{font-style:normal;width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--on-ink);display:grid;place-items:center;font-size:12px}
+.flow li:nth-child(2) b i{background:var(--brand);color:#fff}
+.flow p{font-size:14px;color:var(--sub)}
+/* 스크린샷 */
+.shot{margin:0;display:grid;gap:10px}
+.shot img{width:100%;height:auto;display:block;border-radius:12px;border:1px solid var(--line);background:var(--panel)}
+.shot figcaption{font-size:14px;color:var(--sub)}
+.shot figcaption b{color:var(--fg)}
+.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.phones{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;max-width:760px}
+.phones img{border-radius:22px}
+.tour{display:grid;gap:40px}
+.tour h3 small{font-size:13px;color:var(--muted);font-weight:600;margin-left:6px}
+.points{margin:0;padding-left:18px;color:var(--sub);font-size:15px;display:grid;gap:4px}
+/* 원칙 박스 */
+.rule{border-left:3px solid var(--brand);background:var(--brand-soft);border-radius:0 12px 12px 0;padding:16px 18px;display:grid;gap:6px}
+.rule b{font-size:16px}
+.rule p{font-size:15px;color:var(--sub)}
+/* 계정 비교 */
+.acc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.acc div{border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:6px}
+.acc b{font-size:16px}
+.acc p{font-size:14px;color:var(--sub)}
+.acc .k{font-size:12px;font-weight:800;color:var(--brand)}
+/* BM */
+.bm{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.bm div{background:var(--panel);border-radius:14px;padding:18px;display:grid;gap:6px;align-content:start}
+.bm b{font-size:16px}
+.bm .price{font-size:22px;font-weight:800}
+.bm p{font-size:14px;color:var(--sub)}
+/* 로드맵 */
+.road{list-style:none;margin:0;padding:0;display:grid;gap:0;border-top:2px solid var(--fg)}
+.road li{display:grid;grid-template-columns:64px 120px minmax(0,1fr);gap:12px;padding:14px 0;border-bottom:1px solid var(--line);font-size:15px}
+.road .m{font-weight:800}
+.road .s{font-size:12px;font-weight:700;align-self:start;justify-self:start;border-radius:999px;padding:2px 10px;background:var(--panel);color:var(--sub)}
+.road .s.now{background:var(--brand);color:#fff}
+.road .s.done{background:var(--ink);color:var(--on-ink)}
+.road p{color:var(--sub)}
+.links{display:grid;gap:8px;font-size:15px}
+.links code{font-size:13px;background:var(--panel);border-radius:6px;padding:2px 6px}
+footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+@media (max-width:720px){
+  .flow,.bm,.acc,.pair{grid-template-columns:minmax(0,1fr)}
+  .phones{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .road li{grid-template-columns:48px minmax(0,1fr)}
+  .road li p{grid-column:1/-1}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="wrap">
+  <header class="cover">
+    <div class="logo">LITTLEBOOTH<i></i></div>
+    <h1>행사마다 자라는 <em>나의 작은 부스</em></h1>
+    <p class="lede">리틀부스는 플리마켓·코믹월드·팝업에 부스를 내는 셀러를 위한 앱이에요. 현장에서 판매를 기록하고, 행사가 끝나면 정산과 결과를 바로 보여주고, 행사가 쌓일수록 무엇이 잘 팔리는지 알려줘요.</p>
+    <div class="facts"><span>iOS 먼저 → PC 관리 오피스</span><span>Flutter + Firebase</span><span>지금: HTML 프로토타입 단계</span><span>2026년 11월 기준</span></div>
+  </header>
+
+  <section class="col">
+    <div class="eyebrow">왜 만드나</div>
+    <h2>셀러는 행사가 끝나면 "그래서 얼마 벌었지?"부터 계산해요</h2>
+    <p class="lead">대부분 현장에서는 종이·메모·카톡으로 기록하고, 정산과 회고는 감으로 해요. 친구와 함께 나가면 누구 물건이 얼마나 팔렸는지 나누는 일도 따로 생겨요.</p>
+  </section>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>상황</th><th>지금은</th><th>리틀부스에서는</th></tr></thead>
+      <tbody>
+        <tr><td>현장 판매</td><td>메모·종이, 바쁘면 누락</td><td>상품을 눌러 담고 결제수단만 고르면 기록 끝</td></tr>
+        <tr><td>행사 끝</td><td>엑셀로 다시 계산</td><td>매출·결제수단·담당자별 정산이 바로 나옴</td></tr>
+        <tr><td>함께 나간 부스</td><td>누구 물건이 얼마 팔렸는지 따로 정리</td><td>개인 정산 / 공동 정산 자동 분리</td></tr>
+        <tr><td>다음 행사 준비</td><td>감으로 재고·가격 결정</td><td>지난 행사 판매율·인기 시간대 기반으로 준비</td></tr>
+        <tr><td>행사 고르기</td><td>어디가 잘 됐는지 기억에 의존</td><td>행사끼리 매출·객단가·방문 비교</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <section class="col">
+    <div class="eyebrow">핵심 흐름</div>
+    <h2>행사 하나는 세 단계로 움직여요</h2>
+    <p class="lead">모든 화면은 이 흐름을 중심으로 짜여 있어요. 행사마다 폴더가 하나 생기고, 단계가 바뀌면 보이는 정보도 바뀌어요.</p>
+  </section>
+  <ol class="flow">
+    <li><b><i>1</i>운영 준비</b><p>가설(이번에 확인할 것)과 사진, 준비 체크리스트, 재고에서 가져갈 반입 상품과 수량을 정해요.</p></li>
+    <li><b><i>2</i>운영 중</b><p>판매 화면(POS)에서 상품을 눌러 결제를 기록하고, 방문 +1과 현장 메모를 남겨요.</p></li>
+    <li><b><i>3</i>운영 종료</b><p>결과·회고가 열려요. 시간대별 매출, 판매 순위, 정산, 행사 로그를 보고 엑셀로 내려받아요.</p></li>
+  </ol>
+
+  <section>
+    <div class="eyebrow">화면 둘러보기</div>
+    <h2>프로토타입 화면</h2>
+    <p class="lead col">아래 화면은 모두 데모 계정의 예시 데이터예요(가상의 2인 부스 "서진 & 하윤", 행사 5개·결제 196건). 예시라도 합계·재고·정산이 결제 기록에서 계산돼 서로 맞아요.</p>
+  </section>
+  <div class="tour">
+    <figure class="shot"><img src="img/home.jpg" alt="나의 행사 홈: 지금 운영 중 카드와 행사 폴더 목록" width="1400" height="896">
+      <figcaption><b>나의 행사.</b> 지금 운영 중인 행사가 맨 위에 뜨고, 행사마다 폴더 카드로 상태(준비 중·운영 중·완료)와 매출·준비도를 보여줘요.</figcaption></figure>
+
+    <div class="pair">
+      <figure class="shot"><img src="img/wizard.jpg" alt="새 행사 만들기 1단계 화면" width="1400" height="896">
+        <figcaption><b>새 행사 만들기.</b> 썸네일·날짜·장소를 넣고, 지난 행사의 준비물과 반입 상품을 그대로 불러와요.</figcaption></figure>
+      <figure class="shot"><img src="img/prep.jpg" alt="운영 준비 단계의 개요 화면" width="1400" height="896">
+        <figcaption><b>운영 준비.</b> 가설과 사진, 체크리스트, 반입 상품을 한 화면에서 챙겨요.</figcaption></figure>
+    </div>
+
+    <figure class="shot"><img src="img/pos.jpg" alt="판매 화면: 상품 타일과 오른쪽 현재 주문" width="1400" height="896">
+      <figcaption><b>판매 화면(POS).</b> 상품을 누르면 오른쪽 주문에 담기고, 주문 줄을 누르면 수량·옵션(선물 포장 등)을 바꿔요. 할인과 결제수단(카드·현금·계좌이체·카카오페이)을 고르면 결제 한 건이 초 단위 시각과 함께 저장돼요.</figcaption></figure>
+
+    <div class="pair">
+      <figure class="shot"><img src="img/result1.jpg" alt="결과·회고 상단: 매출, 주문, 객단가, 방문" width="1400" height="896">
+        <figcaption><b>결과·회고.</b> 매출·주문·객단가·방문 요약과 일별·시간대별 매출. 결과는 엑셀(시트 4개)로 내려받아요.</figcaption></figure>
+      <figure class="shot"><img src="img/visit.jpg" alt="5분 단위 방문 막대와 시간당 방문 추이 곡선" width="1400" height="896">
+        <figcaption><b>방문 시간대.</b> 방문을 5분 단위 막대로, 시간당 흐름을 곡선으로 함께 봐요. 결제 담당을 언제 늘릴지 정하는 근거예요.</figcaption></figure>
+    </div>
+
+    <div class="pair">
+      <figure class="shot"><img src="img/result2.jpg" alt="품목별 매출 누적 막대와 판매 순위 표" width="1400" height="896">
+        <figcaption><b>품목별 매출 · 판매 순위.</b> 카테고리 비율 막대와, 가져간 재고 중 몇 %가 팔렸는지·순수익(판매금액−원가)을 보여주는 순위표.</figcaption></figure>
+      <figure class="shot"><img src="img/settle.jpg" alt="개인 정산과 공동 정산 화면" width="1400" height="896">
+        <figcaption><b>정산.</b> 함께 나간 부스라면 개인에게 줄 금액과 공동으로 나눌 금액을 자동으로 나눠요. ⓘ를 누르면 그 사람 상품이 언제 몇 개 팔렸는지 보여요.</figcaption></figure>
+    </div>
+
+    <div class="pair">
+      <figure class="shot"><img src="img/txlog.jpg" alt="판매 기록 탭의 결제 내역 목록" width="1400" height="896">
+        <figcaption><b>판매 기록.</b> 결제마다 날짜·시:분:초, 결제수단, 상품·단가×수량, 할인이 남아요. 정산할 때 근거가 돼요.</figcaption></figure>
+      <figure class="shot"><img src="img/records.jpg" alt="전체 기록·비교: 행사별 매출 막대와 평균선" width="1400" height="896">
+        <figcaption><b>전체 기록·비교.</b> 기간을 골라 행사별 매출·평균을 비교하고, "매출 1위 상품", "가장 바쁜 시간" 같은 하이라이트를 누르면 해당 행사로 가서 그 위치를 짚어줘요.</figcaption></figure>
+    </div>
+
+    <figure class="shot"><img src="img/stock.jpg" alt="재고 관리: 전체·내 굿즈·위탁 탭과 상태 칩" width="1400" height="896">
+      <figcaption><b>재고 관리.</b> 내 굿즈와 친구에게 받은 위탁 상품을 탭으로 나누고, 판매 중·소진(자동)·반환·폐기·삭제 상태로 정리해요. 상품은 지우지 않아서 지난 판매·정산 기록이 깨지지 않아요. 엑셀 등록 양식·내려받기도 여기 있어요.</figcaption></figure>
+
+    <div class="pair">
+      <figure class="shot"><img src="img/chat.jpg" alt="캐릭터톡 갤러리" width="1400" height="896">
+        <figcaption><b>캐릭터톡.</b> 캐릭터를 골라 대화해요. 장부를 보내면 캐릭터가 정산과 다음 재고를 대화로 알려줘요. 대화권은 유료 요소예요.</figcaption></figure>
+      <figure class="shot"><img src="img/talk.jpg" alt="캐릭터와 대화하는 메신저 화면" width="1400" height="896">
+        <figcaption><b>대화 화면.</b> 숫자표 대신 대화로 결과를 읽는 것이 리틀부스의 차별점 중 하나예요.</figcaption></figure>
+    </div>
+
+    <div class="shot">
+      <h3>모바일 <small>현장에서는 휴대폰 하나로</small></h3>
+      <div class="phones">
+        <img src="img/m-home.jpg" alt="모바일 홈 화면" width="560" height="1154">
+        <img src="img/m-pos.jpg" alt="모바일 판매 화면과 하단 시트" width="560" height="1154">
+        <img src="img/m-result.jpg" alt="모바일 결과·회고 화면" width="560" height="1154">
+      </div>
+      <p class="lead" style="font-size:14px">PC·태블릿·모바일 레이아웃이 따로 있어요. 모바일 판매 화면은 아래쪽 시트에서 주문 요약과 결제를 한 손으로 처리해요.</p>
+    </div>
+  </div>
+
+  <section class="col">
+    <div class="eyebrow">데이터 원칙</div>
+    <h2>실제 계정에는 기록된 데이터만 보여줘요</h2>
+    <div class="rule"><b>없는 값은 만들지 않는다</b><p>합계에서 거꾸로 결제 내역이나 시각을 만들어 넣지 않아요. 기록이 없으면 "기록 없음" 또는 "—"로 보여주고, 결과 화면 맨 위에 데이터 출처를 적어요. 예시 수치는 데모 계정에서만 써요.</p></div>
+  </section>
+  <div class="acc">
+    <div><span class="k">데모 계정</span><b>[데모로 둘러보기]</b><p>가상의 2인 부스 예시 데이터. 기능을 둘러보는 용도예요. 위 스크린샷이 모두 데모예요.</p></div>
+    <div><span class="k">실제 기록 계정</span><b>test1234</b><p>이전 버전 앱에서 옮긴 실제 행사 2개(여의도 음악축제 결제 13건, 8월 서코 결제 48건·433,000원). 실제 판매자 정보가 있어 이 보고서에는 싣지 않았어요.</p></div>
+  </div>
+
+  <section class="col">
+    <div class="eyebrow">사업 모델 (가설)</div>
+    <h2>현장 도구는 무료, 성장과 대화에서 수익</h2>
+    <p class="lead">가격은 아직 검증 전 가설이에요. 인터뷰와 가격 테스트로 정해요.</p>
+  </section>
+  <div class="bm">
+    <div><b>Free</b><span class="price tn">0원</span><p>판매 기록·재고·POS·정산·기본 통계</p></div>
+    <div><b>Plus</b><span class="price tn">월 4,900원</span><p>행사 비교·성장 리포트·다음 행사 제안·내보내기·PC 관리 오피스</p></div>
+    <div><b>대화권</b><span class="price tn">10개 1,200원~</span><p>캐릭터 AI 챗으로 장부 읽기. 묶음이 클수록 보너스</p></div>
+  </div>
+
+  <section class="col">
+    <div class="eyebrow">지금 어디까지 왔나</div>
+    <h2>로드맵</h2>
+  </section>
+  <ol class="road">
+    <li><span class="m">M0</span><span class="s done">완료</span><p>타겟·컨셉·차별점·BM 정의, 저장소 구조(docs · app · backend)</p></li>
+    <li><span class="m">M0.5</span><span class="s now">진행 중</span><p>HTML 프로토타입으로 화면·흐름 확정, 화면 명세 작성. 캐릭터 IP와 디자인 시스템 확정이 남아 있어요.</p></li>
+    <li><span class="m">M1</span><span class="s">다음</span><p>iOS MVP (Flutter): 로그인, 행사, 상품·재고, 판매, 정산, 기본 통계. 백엔드는 Firebase</p></li>
+    <li><span class="m">M2</span><span class="s">예정</span><p>성장 분석, AI 캐릭터 챗과 과금, 랜딩페이지, 베타</p></li>
+    <li><span class="m">M3</span><span class="s">예정</span><p>PC 관리 오피스 (분석·관리·내보내기)</p></li>
+    <li><span class="m">M4</span><span class="s">예정</span><p>Android, 행사 주최사·브랜드 제휴</p></li>
+  </ol>
+
+  <section class="col">
+    <div class="eyebrow">더 보기</div>
+    <h2>자료 위치</h2>
+    <div class="links">
+      <p>프로토타입: <a href="https://claude.ai/artifact/RcqMeTHPzezgzpaWkMHqib" target="_blank" rel="noopener">리틀부스 프로토타입 열기</a> (비공개 링크라 공유받아야 열려요)</p>
+      <p>저장소(비공개 예정): <code>docs/</code> 전략·화면 명세·결정 기록 · <code>prototype/</code> 프로토타입 · <code>app/</code> Flutter · <code>backend/</code> Firebase</p>
+      <p>화면 규칙: <code>docs/product/screens.md</code> · 결정: <code>docs/decisions/0001~0003</code></p>
+    </div>
+  </section>
+
+  <footer>리틀부스(LittleBooth) 프로젝트 소개 · 2026년 11월 · 화면은 데모 계정의 가상 예시 데이터</footer>
+</div>

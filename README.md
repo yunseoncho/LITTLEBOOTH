@@ -12,6 +12,6 @@ app/       Flutter 프론트 (iOS → PC)
 backend/   Firebase (Auth·Firestore·Functions·Storage)
 ```
 - 전략: [타겟](docs/strategy/01-target.md) · [컨셉](docs/strategy/02-concept.md) · [차별점](docs/strategy/03-differentiation.md) · [BM](docs/strategy/04-business-model.md)
-- [프로토타입 열기·로그인·데이터 출처](prototype/README.md) · [화면·기능 명세](docs/product/screens.md)
+- [처음 보는 사람을 위한 소개](docs/intro/index.html) · [프로토타입 열기·로그인·데이터 출처](prototype/README.md) · [화면·기능 명세](docs/product/screens.md)
 - [로드맵](docs/plans/roadmap.md) · 결정: [저장소 구조](docs/decisions/0001-repo-structure.md) · [재고 소유·상태](docs/decisions/0002-inventory-ownership-status.md) · [실데이터 원칙](docs/decisions/0003-real-data-only.md)
 - 레거시 웹: `yunseoncho/mylittlebooth` 태그 `legacy-web-final`
