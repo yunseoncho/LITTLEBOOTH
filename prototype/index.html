@@ -1584,6 +1584,10 @@ h1,h2,h3,.fold-body h3,.ccard b,.gcard b,.cd-info h1{word-break:keep-all}
 .nowcard:not(.next):hover{animation-duration:2.2s}
 @keyframes nowglow{0%,100%{--glow:.25}50%{--glow:1}}
 @media (prefers-reduced-motion:reduce){.nowcard:not(.next){animation:none;--glow:.6}}
+
+.nodata{font-size:14px;color:var(--sub);background:var(--hover);border-radius:12px;padding:14px 16px;margin:0;line-height:1.6}
+.srcnote{font-size:12px;color:var(--muted);margin:16px 0 0}
+.dnote{font-size:12px;color:var(--brand);font-weight:600}
 </style>
 
 <div class="devbar" role="group" aria-label="기기 미리보기">
@@ -1710,7 +1714,7 @@ function loadData(key){
   ui.inv={...ui.inv,q:'',owner:'전체',genre:'전체',cat:'전체',page:1,sel:{}}; ui.pf={...ui.pf,q:'',owner:'전체',genre:'전체'};
   return true;
 }
-const payMix = e => { const m={}; if(e.sales.length&&!Object.keys(e.base).length){ e.sales.forEach(x=>{ const k=x.pay; m[k]=m[k]||{amt:0,n:0}; m[k].amt+=x.total; m[k].n++; }); }
+const payMix = e => { const m={}; if(e.payReal){ for(const k in e.payReal) m[k]={...e.payReal[k]}; e.sales.forEach(x=>{ const k=x.pay; m[k]=m[k]||{amt:0,n:0}; m[k].amt+=x.total; m[k].n++; }); return m; } if(e.sales.length&&!Object.keys(e.base).length){ e.sales.forEach(x=>{ const k=x.pay; m[k]=m[k]||{amt:0,n:0}; m[k].amt+=x.total; m[k].n++; }); }
   else { const r=revenue(e), f=Object.keys(e.pay).length?e.pay:{카드:.6,현금:.3,이체:.1}; for(const k in f) m[k]={amt:Math.round(r*f[k]/100)*100,n:null}; } return m; };
 const payLine = e => { const m=payMix(e), t=Object.values(m).reduce((a,x)=>a+x.amt,0)||1; return Object.entries(m).sort((a,b)=>b[1].amt-a[1].amt).map(([k,x])=>`${k} ${Math.round(x.amt/t*100)}%`).join(' · '); };
 const ledgerEv = () => liveEvent() || events.filter(e=>e.status==='done').sort((a,b)=>(evDate(b)||0)-(evDate(a)||0))[0] || events[0];
@@ -1719,8 +1723,9 @@ const STAGES = ['개요·준비','판매 기록','결과·회고'];
 const P = id => products.find(p=>p.id===id);
 const E = id => events.find(e=>e.id===id);
 const tally = ev => { const t={...ev.base}; ev.sales.forEach(s=>s.items.forEach(i=>t[i.id]=(t[i.id]||0)+i.q)); return t; };
-const revenue = ev => { const t=tally(ev); let r=0; for(const k in t) r+=P(k).price*t[k]; return r+ev.sales.reduce((a,s)=>a+(s.extra||0)-s.discount,0); };
-const orders = ev => Math.round(Object.values(ev.base).reduce((a,b)=>a+b,0)/1.6) + ev.sales.length;
+const discOf = ev => ev.sales.reduce((a,s)=>a+s.discount,0)+(ev.discTotal||0);
+const revenue = ev => { const t=tally(ev); let r=0; for(const k in t) r+=(P(k)?P(k).price:0)*t[k]; return r+ev.sales.reduce((a,s)=>a+(s.extra||0),0)-discOf(ev); };
+const orders = ev => ev.ordersReal!=null ? ev.ordersReal+ev.sales.length : Math.round(Object.values(ev.base).reduce((a,b)=>a+b,0)/1.6) + ev.sales.length;
 const nowKST = () => new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Seoul'});
 const ui = {tc:'day', rk:{tab:'상품',sort:'qty',more:false}, pack:1, buyOpen:false, rp:{k:'3m',from:'',to:''}, lines:[], selLine:null, ptab:'즐겨찾기', otype:'현장', discOpen:false, payOpen:false, cashIn:'', psearch:false, inv:{q:'',owner:'전체',genre:'전체',cat:'전체',open:false,sort:'최신 순',per:100,page:1,reorder:false,select:false,sel:{},confirmDel:false}, pd:null, newCat:false, newOpt:false, pf:{q:'',owner:'전체',genre:'전체',open:false}, modal:null, wiz:null, filter:'all', tab:{}, cart:{}, discount:0, pay:'카드', cat:'전체', confirmEnd:false, chatCat:'전체', step:0, unlocked:false, preview:'auto', rail:false};
 try{ ui.rail = localStorage.getItem('lb-rail')==='1'; ui.preview = localStorage.getItem('lb-dev')||'auto'; }catch(e){}
@@ -1952,7 +1957,7 @@ function eventView(id){
   const tab = ui.tab[id];
   if(e.status==='live' && tab===1) return focusView(e);
   return `<div class="page"><main>
-    <div class="ev-top"><label class="evthumb" title="행사 썸네일 바꾸기">${e.thumb?`<img src="${e.thumb}" alt="">`:`<span>${e.big}</span>`}<em>변경</em><input type="file" accept="image/*" data-evthumb="${e.id}" aria-label="행사 썸네일 바꾸기"></label><div style="flex:1;min-width:0"><a class="back" href="#home">← 나의 행사</a><h1>${e.title}</h1><p class="meta">${stBadge(e.status)}${ic.date}<span>${e.date}</span>${ic.place}<span>${e.place}</span></p></div></div>
+    <div class="ev-top"><label class="evthumb" title="행사 썸네일 바꾸기">${e.thumb?`<img src="${e.thumb}" alt="">`:`<span>${e.big}</span>`}<em>변경</em><input type="file" accept="image/*" data-evthumb="${e.id}" aria-label="행사 썸네일 바꾸기"></label><div style="flex:1;min-width:0"><a class="back" href="#home">← 나의 행사</a><h1>${e.title}</h1><p class="meta">${stBadge(e.status)}${ic.date}<span>${e.date}${e.dateNote?` <small class="dnote">${e.dateNote}</small>`:''}</span>${ic.place}<span>${e.place}</span></p></div></div>
     ${flow(e)}
     <div class="utabs" role="tablist" style="margin-top:14px">${STAGES.map((s,i)=>{const dis=i===2&&e.status!=='done';return `<button role="tab" aria-selected="${tab===i}" data-tab="${i}" ${dis?'disabled title="행사 종료 후 확인할 수 있어요"':''}>${i===1&&e.status==='live'?'<span class="live-dot"></span>':''}${s}</button>`}).join('')}</div>
     ${[overviewTab,salesTab,reviewTab][tab](e)}
@@ -2105,7 +2110,7 @@ function csvRows(e, kind){
     return out; }
   if(kind==='owner'){ const t=tally(e), out=[['정산 구분','소유자','상품코드','상품명','단가','판매개수','판매금액']]; const sum={};
     Object.keys(t).filter(k=>P(k)&&P(k).price>0).map(k=>P(k)).sort((a,b)=>(a.settle||'').localeCompare(b.settle||'')||a.owner.localeCompare(b.owner,'ko')).forEach(p=>{ const v=p.price*t[p.id], g=p.settle||'개인'; out.push([g,p.owner,p.code||p.id,p.name,p.price,t[p.id],v]); const k=g+'|'+p.owner; sum[k]=(sum[k]||0)+v; });
-    const disc=e.sales.reduce((a,x)=>a+x.discount,0);
+    const disc=discOf(e);
     out.push([]); out.push(['요약','소유자','','','','','금액']); Object.entries(sum).forEach(([k,v])=>{const [g,o]=k.split('|'); out.push([g+' 합계',o,'','','','',v]);});
     if(disc) out.push(['세트 할인','공동 차감','','','','',-disc]);
     return out; }
@@ -2162,7 +2167,7 @@ const prevEv = e => { const d=evDate(e); return events.filter(x=>x!==e&&x.status
 function optTally(ev){ const t={}; if(ev.optBase) for(const k in ev.optBase) t[k]=ev.optBase[k]; else { const n=Object.values(ev.base).reduce((a,b)=>a+b,0); if(n){ t['선물 포장']=Math.round(n*.14); t['쇼핑백']=Math.round(n*.22); } }
   ev.sales.forEach(s=>{ if(s.opts) for(const k in s.opts) t[k]=(t[k]||0)+s.opts[k]; }); return t; }
 function rankRows(ev, tab){
-  const t=tally(ev), gross=Object.entries(t).reduce((a,[k,v])=>a+P(k).price*v,0), disc=ev.sales.reduce((a,s)=>a+s.discount,0), f=gross?Math.max(0,1-disc/gross):1;
+  const t=tally(ev), gross=Object.entries(t).reduce((a,[k,v])=>a+P(k).price*v,0), disc=discOf(ev), f=gross?Math.max(0,1-disc/gross):1;
   const brought = (k,q) => { const it=(ev.items||[]).find(x=>x.id===k); return Math.max(q, it?it.q:Math.ceil(q*1.25/5)*5); };
   if(tab==='옵션'){ const o=optTally(ev); return Object.entries(o).filter(([,q])=>q>0).map(([n,q])=>{const pr=(POPT.find(x=>x.n===n)||{p:0}).p; return {key:n,name:n,sub:`개당 ${pr.toLocaleString()}원`,qty:q,stock:null,amt:pr*q,net:pr*q};}); }
   const rows=Object.entries(t).filter(([k,q])=>q>0&&P(k)&&P(k).price>0).map(([k,q])=>{const p=P(k);return {key:k,name:p.name,sub:`${p.owner} · ${p.genre}`,qty:q,stock:brought(k,q),amt:p.price*q,net:Math.round((p.price*f-(p.cost||0))*q/10)*10,cat:p.cat};});
@@ -2172,7 +2177,7 @@ function rankRows(ev, tab){
 }
 function rankTable(e){
   const r=ui.rk, rows=rankRows(e,r.tab).sort((a,b)=>b[r.sort]-a[r.sort]);
-  const totAmt=rows.reduce((a,x)=>a+x.amt,0)||1, tdisc=e.sales.reduce((a,x)=>a+x.discount,0), tcost=Object.entries(tally(e)).reduce((a,[k,q])=>a+((P(k)&&P(k).cost)||0)*q,0), totNet=r.tab==='옵션'?rows.reduce((a,x)=>a+x.net,0):totAmt-tdisc-tcost;
+  const totAmt=rows.reduce((a,x)=>a+x.amt,0)||1, tdisc=discOf(e), tcost=Object.entries(tally(e)).reduce((a,[k,q])=>a+((P(k)&&P(k).cost)||0)*q,0), totNet=r.tab==='옵션'?rows.reduce((a,x)=>a+x.net,0):totAmt-tdisc-tcost;
   const pct=(a,b)=>Math.round(a/b*100);
   const shown=r.more?rows:rows.slice(0,5), SORTS=[['qty','판매개수 높은 순'],['amt','판매금액 높은 순'],['net','순수익 높은 순']];
   return `<section class="ovs">
@@ -2189,7 +2194,7 @@ function rankTable(e){
         <span class="tn"><b>${won(x.net)}</b><small class="rk-d">마진 ${x.amt?pct(x.net,x.amt):0}%</small></span></div>`).join('')}
       <div class="rk-r rk-sum" role="row"><span></span><span class="rk-name"><b>합계</b><small>${rows.length}개 ${r.tab==='상품'?'상품':r.tab}</small></span><span class="tn"><small>총 판매</small><b>${rows.reduce((a,x)=>a+x.qty,0)}개</b></span><span class="tn"><small>총 매출</small><b>${won(totAmt)}</b></span><span class="tn"><small>순수익 · 마진 ${pct(totNet,totAmt)}%</small><b class="rk-big">${won(totNet)}</b></span></div>
     </div>${rows.length>5?`<button class="tbtn rk-more" data-rkmore="1">${r.more?'접기':`${rows.length-5}개 더 보기`}</button>`:''}
-    <p class="tc-cap">순수익 = 판매금액 − 상품 원가 − 할인 몫. 원가는 재고 관리에서 상품마다 입력한 값이에요.</p>`
+    <p class="tc-cap">순수익 = 판매금액 − 상품 원가 − 할인 몫.${tcost?' 원가는 재고 관리에서 상품마다 입력한 값이에요.':' 이 행사 상품은 원가가 입력되지 않아 원가를 0원으로 계산했어요.'}</p>`
     :`<p style="color:var(--muted);font-size:14px">${r.tab==='옵션'?'옵션이 붙은 판매가 없어요.':'판매 기록이 없어요.'}</p>`}
   </section>`;
 }
@@ -2199,12 +2204,13 @@ const HW={10:3,11:6,12:11,13:14,14:12,15:9,16:10,17:8,18:5,19:2};
 const hseed = id => [...id].reduce((a,c)=>a*31+c.charCodeAt(0),7);
 function evDays(e){ const m=(e.date||'').match(/(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.(?:\s*[–-]\s*(?:(\d{1,2})\.\s*)?(\d{1,2})\.)?/); if(!m) return [];
   const a=new Date(+m[1],m[2]-1,+m[3]); if(!m[5]) return [a]; const b=new Date(+m[1],(m[4]?+m[4]:+m[2])-1,+m[5]); const out=[]; for(let d=new Date(a);d<=b;d.setDate(d.getDate()+1)) out.push(new Date(d)); return out; }
-function hourly(e){ const rec=e.sales.reduce((a,s)=>a+s.total,0), rest=Math.max(0,revenue(e)-rec), h={}; let sd=hseed(e.id), sum=0; const w={};
+function hourly(e){ if(e.noTime){ const h={}; for(let k=9;k<=21;k++) h[k]=0; return h; } const rec=e.sales.reduce((a,s)=>a+s.total,0), rest=Math.max(0,revenue(e)-rec), h={}; let sd=hseed(e.id), sum=0; const w={};
   for(const k in HW){ sd=(sd*1103515245+12345)%2147483648; w[k]=HW[k]*(0.75+(sd%1000)/2000); sum+=w[k]; }
   for(let k=9;k<=21;k++) h[k]=0; if(rest) for(const k in w) h[k]+=Math.round(rest*w[k]/sum/100)*100;
   e.sales.forEach(s=>{ const hr=+(s.time||'0').split(':')[0]; h[hr]=(h[hr]||0)+s.total; }); return h; }
 function daily(e){ const ds=evDays(e), r=revenue(e); if(ds.length<2) return ds.map(d=>({d,v:r})); const w=ds.map((_,i)=>i===ds.length-1?.58:.42/(ds.length-1)); return ds.map((d,i)=>({d,v:Math.round(r*w[i]/100)*100})); }
 function timeCharts(e){
+  if(e.noTime) return `<section class="ovs"><h3>일별·시간대별 매출</h3><p class="nodata">이 행사는 결제별 시각 기록이 없어서 보여줄 수 없어요. 상품별 판매량과 결제수단별 합계만 남아 있어요.</p></section>`;
   const pv=null, W=640,H=220,pl=8,pb=30,pt=30;
   let bars=[], cap='';
   if(ui.tc==='day'){ const cur=daily(e), old=pv?daily(pv):[]; bars=cur.map((x,i)=>({lab:`${x.d.getMonth()+1}. ${x.d.getDate()}.(${WD[x.d.getDay()]})`,v:x.v,o:old[i]?.v,ol:pv?`${pv.title} ${i+1}일차`:''}));
@@ -2266,7 +2272,7 @@ function ownerModal(){
     <div class="rk-tabs om-tabs" role="tablist"><button role="tab" aria-selected="${tab==='time'}" aria-pressed="${tab==='time'}" data-omtab="time">판매 내역</button><button role="tab" aria-selected="${tab==='sum'}" aria-pressed="${tab==='sum'}" data-omtab="sum">상품별 합계</button></div>
     <div class="om-body">${tab==='time'
       ? (rows.length?`<ul class="om-l">${rows.map(r=>`<li><time class="tn">${(([d,t])=>{const [,m,dd]=d.split('-');return `${+m}. ${+dd}. ${t}`;})(r.at.split(' '))}</time><span>${r.p.code?`<em class="tn">${r.p.code}</em>`:''}${r.p.name}</span><span class="tn">×${r.q}</span><span class="tn">${won(r.p.price*r.q)}</span></li>`).join('')}</ul>`
-         :`<p class="om-empty">${Object.keys(e.base).length?'예시 행사라 시간별 판매 내역 대신 합계만 있어요. [상품별 합계]에서 확인하세요.':'아직 판매된 상품이 없어요.'}</p>`)
+         :`<p class="om-empty">${e.noTime?'이 행사는 결제별 시각 기록이 없어요. [상품별 합계]에서 판매량을 확인하세요.':Object.keys(e.base).length?'예시 행사라 시간별 판매 내역 대신 합계만 있어요. [상품별 합계]에서 확인하세요.':'아직 판매된 상품이 없어요.'}</p>`)
       : `<ul class="om-l sum">${(its.length?its.map(i=>({p:P(i.id),q:t[i.id]||0,b:i.q})):sum.map(x=>({...x,b:null}))).filter(x=>x.p).sort((a,b)=>b.p.price*b.q-a.p.price*a.q).map(x=>`<li class="${x.q?'':'zero'}"><span>${x.p.code?`<em class="tn">${x.p.code}</em>`:''}${x.p.name}</span><span class="tn">${x.q}개${x.b!=null?` / ${x.b}`:''}</span><span class="tn">${won(x.p.price*x.q)}</span></li>`).join('')}
          <li class="tot"><span>합계</span><span class="tn">${tq}개</span><span class="tn">${won(ta)}</span></li></ul>`}</div>
   </section>`;
@@ -2274,12 +2280,12 @@ function ownerModal(){
 function ownerSettle(e){
   const t=tally(e), ids=Object.keys(t).filter(k=>P(k));
   if(ids.some(k=>P(k).settle==='공동')){
-    const disc=e.sales.reduce((a,x)=>a+x.discount,0), gross=ids.reduce((a,k)=>a+P(k).price*t[k],0), per={}; let joint=0;
+    const disc=discOf(e), gross=ids.reduce((a,k)=>a+P(k).price*t[k],0), per={}; let joint=0;
     (e.items||[]).forEach(i=>{ const p=P(i.id); if(p&&p.settle==='개인') per[p.owner]=per[p.owner]||0; });
     ids.forEach(k=>{ const p=P(k), v=p.price*t[k]; if(p.settle==='개인') per[p.owner]=(per[p.owner]||0)+v; else joint+=v; });
     const pt=Object.values(per).reduce((a,b)=>a+b,0);
     return `<section class="ovs"><h3>정산 ${csvBtn(e,'owner','소유자별 정산')}</h3>
-      <div class="stl3"><div class="k"><small>총 판매금액</small><b class="tn">${won(gross-disc)}</b><span>결제 ${e.sales.length}건${disc?` · 세트 할인 −${won(disc)}`:''}</span></div>
+      <div class="stl3"><div class="k"><small>총 판매금액</small><b class="tn">${won(gross-disc)}</b><span>결제 ${orders(e)}건${disc?` · 세트 할인 −${won(disc)}`:''}</span></div>
         <div><small>개인에게 지급할 금액</small><b class="tn">${won(pt)}</b><span>개인정산 체크 상품 기준</span></div>
         <div><small>공동으로 정산할 금액</small><b class="tn">${won(joint-disc)}</b><span>세트 할인 차감 · 비용 뺀 뒤 n/1</span></div></div>
       <h4 class="stl-h">개인 정산 내역 <small>비용 차감 없이 각 담당자에게 돌아가는 매출</small></h4>
@@ -2295,6 +2301,8 @@ function ownerSettle(e){
     <p class="tc-cap">정산 금액 = 판매금액 − 할인 몫 (원가는 각자 부담). 순수익 = 정산 금액 − 원가.</p></section>`;
 }
 function fieldLog(e){
+  const isReal = e.noTime || (e.sales.length && !Object.keys(e.base).length && e.id.indexOf('e')!==0);
+  if(e.noTime) return `<section class="ovs"><h3>행사 로그</h3><p class="nodata">시각이 남은 기록이 없어 로그를 만들 수 없어요. 판매 ${Object.values(tally(e)).reduce((a,b)=>a+b,0)}개 · 매출 ${won(revenue(e))} · 결제 ${orders(e)}건이 이 행사의 전체 기록이에요.</p></section>`;
   const H=hourly(e), hrs=Object.keys(H).map(Number).sort((a,b)=>a-b), totH=hrs.reduce((a,k)=>a+H[k],0)||1, ev=[];
   const at=(frac)=>{ let c=0; for(const k of hrs){ const n=c+H[k]/totH; if(n>=frac&&H[k]){ const m=Math.min(59,Math.round((frac-c)/(H[k]/totH)*60)); return `${String(k).padStart(2,'0')}:${String(m).padStart(2,'0')}`; } c=n; } return null; };
   const realLog = e.sales.length && !Object.keys(e.base).length;
@@ -2319,20 +2327,20 @@ function fieldLog(e){
   ev.sort((a,b)=>a.at.localeCompare(b.at));
   const d0=evDays(e)[0]||new Date(), dd=n=>{const d=new Date(d0); d.setDate(d.getDate()-n); return `${d.getMonth()+1}. ${d.getDate()}.`;};
   const its=evItems(e), sd=hseed(e.id);
-  const prep=[{at:dd(14),k:'만들기',t:`행사 만들기 · ${e.place}`},{at:dd(14),k:'가설',t:e.goal||'가설 작성'}];
-  e.checklist.forEach((c,i)=>{ if(c.d) prep.push({at:dd(Math.max(1,7-i*2-(sd%2))),k:'준비',t:`${c.t} 완료`}); });
-  prep.push({at:dd(3),k:'반입',t:`반입 상품 확정 · ${its.length}종 ${its.reduce((a,i)=>a+i.q,0)}개`});
+  const prep=isReal?[]:[{at:dd(14),k:'만들기',t:`행사 만들기 · ${e.place}`},{at:dd(14),k:'가설',t:e.goal||'가설 작성'}];
+  if(!isReal) e.checklist.forEach((c,i)=>{ if(c.d) prep.push({at:dd(Math.max(1,7-i*2-(sd%2))),k:'준비',t:`${c.t} 완료`}); });
+  if(!isReal) prep.push({at:dd(3),k:'반입',t:`반입 상품 확정 · ${its.length}종 ${its.reduce((a,i)=>a+i.q,0)}개`});
   prep.sort((a,b)=>{const f=x=>x.split('.').map(Number); const [am,ad]=f(a.at),[bm,bd]=f(b.at); return am-bm||ad-bd;});
-  if(e.checklist.length&&e.checklist.every(c=>c.d)) prep.push({at:dd(1),k:'준비',t:'준비 체크리스트 모두 완료'});
+  if(!isReal&&e.checklist.length&&e.checklist.every(c=>c.d)) prep.push({at:dd(1),k:'준비',t:'준비 체크리스트 모두 완료'});
   const firstHr=hrs.find(k=>H[k])??10, lastHr=[...hrs].reverse().find(k=>H[k])??18;
   const startAt=e.start||`${String(firstHr).padStart(2,'0')}:00`, endAt=e.endAt||`${String(lastHr+1).padStart(2,'0')}:00`;
   const run=[{at:startAt,k:'시작',t:'운영 시작'},...ev];
   const fin=[{at:endAt,k:'종료',t:`행사 종료 · 매출 ${won(revenue(e))} · 주문 ${orders(e)}건 · 방문 ${visTxt(e)}`}];
-  (e.retros||[]).forEach(r=>fin.push({at:/^\d/.test(r.at)?r.at.split(' ').slice(0,2).join(' '):dd(0),k:'회고',t:r.t.length>40?r.t.slice(0,40)+'…':r.t}));
+  (e.retros||[]).forEach(r=>fin.push({at:/^\d/.test(r.at)?r.at.split(' ').slice(0,2).join(' '):(isReal?'—':dd(0)),k:'회고',t:r.t.length>40?r.t.slice(0,40)+'…':r.t}));
   const li=x=>`<li class="fl-${x.k}"><time class="tn">${x.at}</time><i></i><span><em>${x.k}</em>${x.t}</span></li>`;
   const ph=(n,label,sub,arr)=>`<li class="fl-ph"><span class="fl-pn">${n}</span><b>${label}</b><small class="tn">${sub}</small></li>${arr.map(li).join('')}`;
   return `<section class="ovs"><h3>행사 로그 <span class="ov-n" style="font-weight:500">${prep.length+run.length+fin.length}개</span></h3>
-    <ol class="flog">${ph(1,'운영 준비',`${dd(14)} ~ ${dd(1)}`,prep)}${ph(2,'운영 중',`${dd(0)} ${startAt} ~ ${endAt}`,run)}${ph(3,'운영 종료',dd(0),fin)}</ol></section>`;
+    <ol class="flog">${prep.length?ph(1,'운영 준비',`${dd(14)} ~ ${dd(1)}`,prep):''}${ph(2,'운영 중',`${dd(0)} ${startAt} ~ ${endAt}`,run)}${ph(3,'운영 종료',dd(0),fin)}</ol></section>`;
 }
 function retroBlock(e){
   if(!e.retros) e.retros = e.review?[{at:'행사 당일',t:e.review}]:[];
@@ -2342,7 +2350,7 @@ function retroBlock(e){
 }
 function txList(e){
   const ss=e.sales.slice().sort((a,b)=>saleAt(e,b).localeCompare(saleAt(e,a))), shown=ui.txMore?ss:ss.slice(0,8);
-  if(!ss.length) return `<section class="ovs"><h3>결제 내역</h3><p style="color:var(--muted);font-size:14px">${Object.keys(e.base).length?'예시 행사라 개별 결제 대신 합계만 보관돼요.':'결제 기록이 없어요.'}</p></section>`;
+  if(!ss.length) return `<section class="ovs"><h3>결제 내역</h3><p class="nodata">${e.noTime?`개별 결제 기록이 없는 행사예요. 결제 ${orders(e)}건의 결제수단별 합계만 남아 있어요.`:Object.keys(e.base).length?'예시 행사라 개별 결제 대신 합계만 보관돼요.':'결제 기록이 없어요.'}</p></section>`;
   return `<section class="ovs"><h3>결제 내역 <span class="ov-n" style="font-weight:500">${ss.length}건</span> ${csvBtn(e,'tx','결제 내역')}</h3>
     <ul class="txl">${shown.map(x=>`<li><div class="tx-h"><time class="tn">${saleAt(e,x)}</time><span class="tx-pay">${x.pay}</span>${x.note?`<span class="tx-note">${x.note}</span>`:''}<b class="tn">${won(x.total)}</b></div>
       <ul class="tx-items">${x.items.map(i=>{const p=P(i.id)||{name:i.id,price:0};return `<li><span>${p.code?`<em class="tn">${p.code}</em>`:''}${p.name} <small>${p.owner||''}</small></span><span class="tn">${won(p.price)} × ${i.q}</span><span class="tn">${won(p.price*i.q)}</span></li>`}).join('')}
@@ -2352,6 +2360,7 @@ function txList(e){
 function reviewTab(e){
   const rev=revenue(e), pay = Object.keys(e.pay).length?e.pay:{카드:.6,현금:.3,이체:.1};
   return `<div class="ovl">
+    ${e.source?`<p class="srcnote">데이터 출처: ${e.source}${e.discNote?` · ${e.discNote}`:''}</p>`:''}
     <section class="ovs">${statRow(e)}</section>
     ${timeCharts(e)}
     ${catBars(e)}
@@ -2365,7 +2374,7 @@ function reviewTab(e){
 }
 
 /* ---------- 전체 기록·비교 ---------- */
-const evDate = e => { const m=(e.date||'').match(/(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/); return m?new Date(+m[1],m[2]-1,+m[3]):null; };
+const evDate = e => { const m=(e.date||'').match(/(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/); if(m) return new Date(+m[1],m[2]-1,+m[3]); const y=(e.date||'').match(/(\d{4})\.\s*(\d{1,2})\./); return y?new Date(+y[1],+y[2],0):null; };
 const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const RP = {'1m':['최근 1개월',30],'2m':['최근 2개월',61],'3m':['최근 3개월',92],'all':['전체 기간',0],'custom':['직접 지정',0]};
 function rangeOf(){ const r=ui.rp, now=new Date(); now.setHours(23,59,59,999);
