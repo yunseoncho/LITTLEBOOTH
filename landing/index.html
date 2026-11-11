@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>리틀부스</title>
+<meta name="description" content="함께 부스를 내는 사람들을 위한 현장 판매 기록과 정산 앱.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Dela+Gothic+One&family=ZCOOL+QingKe+HuangYou&family=Noto+Sans+KR:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&family=Noto+Sans+SC:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* 레이아웃: 부스 현수막처럼 굵은 제목 + 영수증 한 장이 주인공인 한 줄 흐름. 분홍은 브랜드 하나만. */
+:root {
+  --bg: #f6f6f4; --paper: #ffffff; --ink: #17171a; --sub: #54545c; --line: #dcdcd6;
+  --pink: #d6126b; --pink-soft: #fde8f1; --on-pink: #ffffff; --tape: #ececE6;
+  --head: 'Black Han Sans', 'Dela Gothic One', 'Noto Sans KR', sans-serif;
+  --body: 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif;
+  --mono: 'DM Mono', ui-monospace, 'Noto Sans KR', monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121215; --paper: #1b1b20; --ink: #f0f0f2; --sub: #b4b4bc; --line: #2f2f36;
+  --pink: #ff6aa2; --pink-soft: #3a1a29; --on-pink: #1a0a12; --tape: #26262c; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #121215; --paper: #1b1b20; --ink: #f0f0f2; --sub: #b4b4bc; --line: #2f2f36;
+  --pink: #ff6aa2; --pink-soft: #3a1a29; --on-pink: #1a0a12; --tape: #26262c; color-scheme: dark; }
+:lang(ja) { --head: 'Dela Gothic One', 'Noto Sans JP', sans-serif; }
+:lang(zh) { --head: 'ZCOOL QingKe HuangYou', 'Noto Sans SC', sans-serif; }
+:lang(ja) body, :lang(zh) body { word-break: normal; overflow-wrap: anywhere; line-break: strict; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.75;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 56px; word-break: keep-all; }
+.wrap { max-width: 1040px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--head); font-weight: 400; margin: 0; text-wrap: balance; letter-spacing: -0.01em; line-height: 1.2; }
+p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; border-radius: 4px; }
+
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 18px; flex-wrap: wrap; }
+.logo { font-family: var(--head); font-size: 22px; letter-spacing: 0.02em; text-decoration: none; }
+.logo i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--pink); margin-left: 3px; vertical-align: super; }
+.langs { display: flex; gap: 6px; }
+.langs button { font: inherit; font-size: 14px; color: var(--sub); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+.langs button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 48px; align-items: center; padding-block: 40px 72px; }
+.eyebrow { font-size: 14px; color: var(--pink); font-weight: 700; letter-spacing: 0.04em; margin-bottom: 14px; }
+h1 { font-size: clamp(34px, 5.4vw, 56px); }
+.lead { margin-top: 22px; font-size: 19px; color: var(--sub); max-width: 34em; }
+.cta { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; }
+.btn { display: inline-block; font: inherit; font-weight: 700; font-size: 17px; text-decoration: none; background: var(--pink); color: var(--on-pink); border: 0; border-radius: 12px; padding: 14px 24px; cursor: pointer; }
+.btn[aria-disabled="true"] { background: var(--tape); color: var(--sub); cursor: default; }
+.note { font-size: 14px; color: var(--sub); }
+
+/* 영수증 */
+.receipt { background: var(--paper); border: 1px solid var(--line); border-radius: 6px 6px 0 0; padding: 26px 24px 34px; font-family: var(--mono); font-size: 15px; line-height: 1.9; position: relative; transform: rotate(1.2deg); box-shadow: 0 14px 34px rgba(0,0,0,.10); }
+.receipt::after { content: ""; position: absolute; left: -1px; right: -1px; bottom: -9px; height: 10px;
+  background: linear-gradient(-45deg, transparent 6px, var(--paper) 0) 0 0 / 14px 10px, linear-gradient(45deg, transparent 6px, var(--paper) 0) 0 0 / 14px 10px; }
+.receipt .tag { display: inline-block; font-family: var(--body); font-size: 12px; font-weight: 700; color: var(--pink); background: var(--pink-soft); border-radius: 4px; padding: 0 8px; }
+.receipt h3 { font-family: var(--body); font-size: 16px; font-weight: 700; margin: 8px 0 12px; }
+.receipt .r { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-variant-numeric: tabular-nums; }
+.receipt .r span:first-child { min-width: 0; }
+.receipt .sec { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); font-family: var(--body); font-size: 12px; color: var(--sub); letter-spacing: .06em; }
+.receipt .total { margin-top: 12px; padding-top: 10px; border-top: 2px solid var(--ink); font-weight: 500; font-size: 17px; }
+.receipt .total .big { color: var(--pink); font-weight: 500; font-size: 22px; }
+
+section { padding-block: 56px; border-top: 1px solid var(--line); }
+section > h2 { font-size: clamp(26px, 4vw, 38px); margin-bottom: 30px; max-width: 18em; }
+.three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; }
+.three h3 { font-size: 21px; margin-bottom: 10px; }
+.three p { color: var(--sub); }
+.steps { display: grid; grid-template-columns: minmax(0, 1fr); gap: 56px; }
+.step { display: grid; grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.6fr); gap: 36px; align-items: center; }
+.step:nth-child(even) { grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.7fr); }
+.step:nth-child(even) .stext { order: 2; }
+.step h3 { font-size: 26px; margin: 0 0 8px; }
+.step p { color: var(--sub); font-size: 16.5px; }
+.step img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px; display: block; background: var(--paper); box-shadow: 0 10px 28px rgba(0,0,0,.08); }
+.shotnote { margin-top: 22px; font-size: 14px; color: var(--sub); }
+.keep { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 48px; list-style: none; padding: 0; margin: 0; }
+.keep li { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.keep b { display: block; font-size: 17px; }
+.keep span { color: var(--sub); font-size: 15.5px; }
+.cta-end { text-align: left; }
+.cta-end p.lead { margin-bottom: 0; }
+footer { padding-block: 28px 0; border-top: 1px solid var(--line); font-size: 14px; color: var(--sub); display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+
+@media (max-width: 820px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 40px; padding-block: 20px 56px; }
+  .three, .keep, .step, .step:nth-child(even) { grid-template-columns: minmax(0, 1fr); }
+  .step { gap: 16px; } .step:nth-child(even) .stext { order: 0; }
+  .three { gap: 28px; }
+  .receipt { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="logo" href="#ko" aria-label="LittleBooth">LITTLEBOOTH<i></i></a>
+    <div class="langs" role="group" aria-label="Language">
+      <button type="button" data-lang="ko" aria-pressed="true">한국어</button>
+      <button type="button" data-lang="en" aria-pressed="false">English</button>
+      <button type="button" data-lang="ja" aria-pressed="false">日本語</button>
+      <button type="button" data-lang="zh" aria-pressed="false">简体中文</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div>
+        <p class="eyebrow" data-i18n="eyebrow">함께 부스를 내는 사람들을 위한 판매 기록 앱</p>
+        <h1 data-i18n="h1">행사가 끝나면, 정산도 끝나 있게.</h1>
+        <p class="lead" data-i18n="lead">플리마켓, 캐릭터 페어, 즉매회에서 판매를 기록하면 개인 몫과 공동 몫을 앱이 나눠 줘요. 계산기를 다시 두드리지 않아도 돼요.</p>
+        <div class="cta">
+          <a class="btn" id="cta-main" href="#cta-end" aria-disabled="true" data-i18n="cta.soon">곧 열려요</a>
+          <span class="note" data-i18n="status">iOS · 무료 · 계정 없음 · 출시 준비 중</span>
+        </div>
+      </div>
+
+      <figure style="margin:0" aria-label="receipt">
+        <div class="receipt">
+          <span class="tag" data-i18n="rc.tag">예시 · 가상의 데이터</span>
+          <h3 data-i18n="rc.title">4명 공동 부스 정산</h3>
+          <div class="r"><span data-i18n="rc.sales">매출</span><span>332,000</span></div>
+          <div class="sec" data-i18n="rc.personal">개인 정산 · 각자 만든 물건</div>
+          <div class="r"><span>A</span><span>90,000</span></div>
+          <div class="r"><span>B</span><span>40,000</span></div>
+          <div class="sec" data-i18n="rc.joint">공동 정산 · 함께 만든 물건</div>
+          <div class="r"><span data-i18n="rc.jsales">공동 상품 판매</span><span>210,000</span></div>
+          <div class="r"><span data-i18n="rc.disc">할인</span><span>−8,000</span></div>
+          <div class="r"><span data-i18n="rc.cost">비용 (부스비)</span><span>−60,000</span></div>
+          <div class="r total"><span data-i18n="rc.per">1인당 (÷4)</span><span class="big">35,500</span></div>
+        </div>
+      </figure>
+    </div>
+
+    <section aria-labelledby="why">
+      <h2 id="why" data-i18n="why.h">직접 부스를 내 보고 알게 된 것</h2>
+      <div class="three">
+        <div><h3 data-i18n="why1.h">정산표를 따로 만들게 돼요</h3><p data-i18n="why1.p">다섯 명이 한 부스를 쓰면 누구 물건이 얼마 팔렸고 누구에게 얼마를 줘야 하는지, 행사가 끝난 뒤 다시 계산하게 돼요.</p></div>
+        <div><h3 data-i18n="why2.h">현장에서는 기록을 놓쳐요</h3><p data-i18n="why2.p">결제는 대부분 계좌이체라 돈이 바로 들어와요. 무엇을 팔았는지 그 자리에서 적지 않으면 나중에 맞출 수 없어요.</p></div>
+        <div><h3 data-i18n="why3.h">행사마다 볼 숫자가 달라요</h3><p data-i18n="why3.p">어떤 행사는 매출이, 어떤 행사는 인스타그램 팔로워가 목표예요. 행사 전에 확인할 것을 정하고, 끝난 뒤에 확인해요.</p></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="how">
+      <h2 id="how" data-i18n="how.h">준비하고, 팔고, 돌아봐요</h2>
+      <div class="steps">
+        <div class="step"><div class="stext"><h3 data-i18n="s1.h">준비</h3><p data-i18n="s1.p">이번 행사에서 확인할 것을 적고, 가져갈 상품과 수량을 정해요.</p></div><img src="img/prep.jpg" width="1400" height="896" alt="운영 준비 화면" data-i18n-alt="img.prep"></div>
+        <div class="step"><div class="stext"><h3 data-i18n="s2.h">판매</h3><p data-i18n="s2.p">상품을 눌러 담고 결제수단을 고르면 한 건이 시각과 함께 남아요. 재고는 자동으로 줄어요.</p></div><img src="img/pos.jpg" width="1400" height="896" alt="판매 화면" data-i18n-alt="img.pos"></div>
+        <div class="step"><div class="stext"><h3 data-i18n="s3.h">결과와 정산</h3><p data-i18n="s3.p">매출, 시간대, 잘 팔린 상품과 사람별 정산이 한 번에 나와요. 내보내서 팀원과 맞춰 봐요.</p></div><img src="img/settle.jpg" width="1400" height="896" alt="정산 화면" data-i18n-alt="img.settle"></div>
+      </div>
+      <p class="shotnote" data-i18n="shotnote">화면은 디자인 시안이고, 모두 가상의 예시 데이터예요.</p>
+    </section>
+
+    <section aria-labelledby="privacy">
+      <h2 id="privacy" data-i18n="pv.h">내 장부는 내 폰 안에만</h2>
+      <ul class="keep">
+        <li><b data-i18n="pv1.h">서버도 계정도 없어요</b><span data-i18n="pv1.p">기록은 이 기기에만 저장돼요. 로그인이 없고, 광고·분석 도구도 넣지 않아요.</span></li>
+        <li><b data-i18n="pv2.h">암호화해 저장하도록 만들었어요</b><span data-i18n="pv2.p">기기 안 데이터베이스를 암호화하고, Face ID나 암호로 앱을 잠글 수 있어요.</span></li>
+        <li><b data-i18n="pv3.h">돈은 건드리지 않아요</b><span data-i18n="pv3.p">현금·계좌이체 같은 결제는 기록만 해요. 앱이 돈을 받거나 보내지 않아요.</span></li>
+        <li><b data-i18n="pv4.h">언제든 지울 수 있어요</b><span data-i18n="pv4.p">설정에서 모든 데이터를 한 번에 지울 수 있어요. 내보내는 파일은 내가 고른 사람에게만 가요.</span></li>
+      </ul>
+    </section>
+
+    <section class="cta-end" id="cta-end" aria-labelledby="join">
+      <h2 id="join" data-i18n="end.h">먼저 써 볼 분을 찾고 있어요</h2>
+      <p class="lead" data-i18n="end.p">지금은 iOS 앱을 만드는 중이에요. 곧 TestFlight로 써 볼 셀러를 모집해요. 한국어, English, 日本語, 简体中文를 지원할 예정이에요.</p>
+      <div class="cta">
+        <a class="btn" id="cta-end-btn" href="#cta-end" aria-disabled="true" data-i18n="cta.soon">곧 열려요</a>
+        <span class="note" id="cta-note" data-i18n="cta.note">신청 주소를 준비하고 있어요.</span>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>LittleBooth</span>
+    <a href="privacy.html" data-i18n="foot.privacy">개인정보 처리방침</a>
+  </footer>
+</div>
+
+<script>
+// 사전 신청 폼 주소(예: 구글 폼). 비어 있으면 버튼은 "곧 열려요"로 비활성 상태가 된다.
+const WAITLIST_URL = '';
+
+const T = {
+  en: {
+    'eyebrow': 'A sales ledger for people who share a booth',
+    'h1': 'When the event ends, the settlement is already done.',
+    'lead': 'Log sales at flea markets, character fairs and doujin events. The app splits personal and shared earnings so nobody re-does the math.',
+    'cta.soon': 'Opening soon', 'cta.join': 'Join the beta', 'status': 'iOS · Free · No account · In development',
+    'rc.tag': 'Example · made-up data', 'rc.title': 'Settlement for a 4-person booth', 'rc.sales': 'Sales',
+    'rc.personal': 'PERSONAL · THINGS EACH PERSON MADE', 'rc.joint': 'SHARED · THINGS MADE TOGETHER', 'rc.jsales': 'Shared products sold',
+    'rc.disc': 'Discounts', 'rc.cost': 'Costs (booth fee)', 'rc.per': 'Per person (÷4)',
+    'why.h': 'What I learned from running booths myself',
+    'why1.h': 'You end up building a settlement sheet', 'why1.p': 'When five people share one booth, you work out who sold how much and who is owed what after the event, from scratch.',
+    'why2.h': 'You miss records on the floor', 'why2.p': 'Most payments are bank transfers, so the money simply arrives. If you do not note what sold, you cannot reconcile it later.',
+    'why3.h': 'Every event needs different numbers', 'why3.p': 'One event is about sales, another about Instagram followers. Decide what to check before the event, and check it after.',
+    'how.h': 'Prepare, sell, look back',
+    'img.prep': 'Event prep screen', 'img.pos': 'Sales screen', 'img.settle': 'Settlement screen',
+    's1.h': 'Prepare', 's1.p': 'Write down what you want to find out and pick the products and quantities to bring.',
+    's2.h': 'Sell', 's2.p': 'Tap products, choose a payment method, and each sale is saved with its time. Stock goes down by itself.',
+    's3.h': 'Results and settlement', 's3.p': 'Sales, busy hours, best sellers and each person\'s share in one place. Export it to check with teammates.',
+    'shotnote': 'Screens are design mockups with made-up example data.',
+    'pv.h': 'Your ledger stays on your phone',
+    'pv1.h': 'No server, no account', 'pv1.p': 'Records live only on this device. No login, and no ads or analytics tools.',
+    'pv2.h': 'Built to be stored encrypted', 'pv2.p': 'The on-device database is encrypted, and you can lock the app with Face ID or your passcode.',
+    'pv3.h': 'It never touches your money', 'pv3.p': 'Cash and bank transfers are only recorded. The app does not receive or send money.',
+    'pv4.h': 'Delete everything anytime', 'pv4.p': 'Erase all data in one step from Settings. Exported files go only to people you choose.',
+    'end.h': 'Looking for the first sellers to try it', 'end.p': 'The iOS app is in development. TestFlight testers will be invited soon. Planned languages: 한국어, English, 日本語, 简体中文.',
+    'cta.note': 'The sign-up link is being prepared.', 'foot.privacy': 'Privacy policy',
+  },
+  ja: {
+    'eyebrow': 'ブースを一緒に出す人のための販売記録アプリ',
+    'h1': 'イベントが終わったら、精算も終わっている。',
+    'lead': 'フリマ、キャラクターフェア、即売会での販売を記録すると、個人分と共同分をアプリが分けます。もう電卓を叩き直さなくて大丈夫です。',
+    'cta.soon': 'まもなく公開', 'cta.join': 'ベータに参加', 'status': 'iOS・無料・アカウント不要・開発中',
+    'rc.tag': '例・架空のデータ', 'rc.title': '4人ブースの精算', 'rc.sales': '売上',
+    'rc.personal': '個人精算・各自が作った物', 'rc.joint': '共同精算・一緒に作った物', 'rc.jsales': '共同商品の売上',
+    'rc.disc': '値引き', 'rc.cost': '経費（ブース代）', 'rc.per': '1人あたり（÷4）',
+    'why.h': '実際にブースを出して分かったこと',
+    'why1.h': '精算表を別に作ることになる', 'why1.p': '5人で1つのブースを使うと、誰の物がいくら売れて誰にいくら渡すのか、終わった後に計算し直すことになります。',
+    'why2.h': '現場では記録が漏れる', 'why2.p': '支払いはほとんど振込で、お金がすぐ入ります。その場で何を売ったか書かないと、後から合わせられません。',
+    'why3.h': 'イベントごとに見る数字が違う', 'why3.p': '売上が目標のイベントもあれば、Instagramのフォロワーが目標のイベントもあります。事前に確かめることを決め、終わってから確かめます。',
+    'how.h': '準備して、売って、振り返る',
+    'img.prep': 'イベント準備の画面', 'img.pos': '販売画面', 'img.settle': '精算画面',
+    's1.h': '準備', 's1.p': '今回確かめたいことを書き、持っていく商品と数を決めます。',
+    's2.h': '販売', 's2.p': '商品をタップして支払い方法を選ぶと、1件が時刻つきで残ります。在庫は自動で減ります。',
+    's3.h': '結果と精算', 's3.p': '売上、時間帯、売れ筋、人ごとの精算が一度に出ます。書き出してチームで確認できます。',
+    'shotnote': '画面はデザイン案で、すべて架空の例のデータです。',
+    'pv.h': '帳簿は自分のスマホの中だけ',
+    'pv1.h': 'サーバーもアカウントもなし', 'pv1.p': '記録はこの端末にだけ保存されます。ログインはなく、広告や解析ツールも入れません。',
+    'pv2.h': '暗号化して保存する設計', 'pv2.p': '端末内のデータベースを暗号化し、Face IDやパスコードでアプリをロックできます。',
+    'pv3.h': 'お金には触れません', 'pv3.p': '現金や振込などの支払いは記録だけ。アプリがお金を受け取ったり送ったりはしません。',
+    'pv4.h': 'いつでも全部消せる', 'pv4.p': '設定からすべてのデータを一度に消せます。書き出したファイルは選んだ人にだけ渡ります。',
+    'end.h': '最初に使ってくれる方を探しています', 'end.p': '現在iOSアプリを開発中です。まもなくTestFlightで試してくれる出展者を募集します。対応予定の言語：한국어、English、日本語、简体中文。',
+    'cta.note': '申込みページを準備しています。', 'foot.privacy': 'プライバシーポリシー',
+  },
+  zh: {
+    'eyebrow': '为共用摊位的人做的销售记录应用',
+    'h1': '活动一结束，结算就已经完成。',
+    'lead': '在跳蚤市集、角色展和同人展上记录销售，应用会自动分好个人部分和共同部分。不用再拿计算器重算一遍。',
+    'cta.soon': '即将开放', 'cta.join': '加入内测', 'status': 'iOS · 免费 · 无需账号 · 开发中',
+    'rc.tag': '示例 · 虚构数据', 'rc.title': '4 人共用摊位结算', 'rc.sales': '销售额',
+    'rc.personal': '个人结算 · 各自制作的商品', 'rc.joint': '共同结算 · 一起制作的商品', 'rc.jsales': '共同商品销售额',
+    'rc.disc': '优惠', 'rc.cost': '费用（摊位费）', 'rc.per': '人均（÷4）',
+    'why.h': '自己摆摊之后才明白的事',
+    'why1.h': '要另外做一张结算表', 'why1.p': '五个人共用一个摊位，谁的商品卖了多少、该给谁多少钱，活动结束后只能重新算一遍。',
+    'why2.h': '现场容易漏记', 'why2.p': '大多数付款是银行转账，钱马上到账。当场不记下卖了什么，之后就对不上了。',
+    'why3.h': '每场活动要看的数字不同', 'why3.p': '有的活动看销售额，有的活动看 Instagram 粉丝。活动前先定好要验证什么，结束后再核对。',
+    'how.h': '准备、销售、复盘',
+    'img.prep': '活动准备界面', 'img.pos': '销售界面', 'img.settle': '结算界面',
+    's1.h': '准备', 's1.p': '写下这次想验证的事，选好要带的商品和数量。',
+    's2.h': '销售', 's2.p': '点商品加入订单，选择支付方式，每一笔都会连同时间一起保存。库存自动减少。',
+    's3.h': '结果与结算', 's3.p': '销售额、时段、热销商品和每个人的份额一次看全。可以导出和队友核对。',
+    'shotnote': '界面为设计稿，数据均为虚构示例。',
+    'pv.h': '你的账本只在你的手机里',
+    'pv1.h': '没有服务器，也没有账号', 'pv1.p': '记录只保存在这台设备上。无需登录，也不放广告和统计工具。',
+    'pv2.h': '按加密存储来设计', 'pv2.p': '设备内的数据库经过加密，可以用 Face ID 或密码锁定应用。',
+    'pv3.h': '不经手你的钱', 'pv3.p': '现金、银行转账等付款只做记录。应用不收款也不转账。',
+    'pv4.h': '随时可以全部删除', 'pv4.p': '在设置中一步清除所有数据。导出的文件只会交给你选的人。',
+    'end.h': '正在寻找第一批试用的摊主', 'end.p': 'iOS 应用正在开发中，即将通过 TestFlight 邀请摊主试用。计划支持：한국어、English、日本語、简体中文。',
+    'cta.note': '报名链接正在准备中。', 'foot.privacy': '隐私政策',
+  },
+};
+
+let KO = null;
+function apply(lang) {
+  const els = document.querySelectorAll('[data-i18n]');
+  if (!KO) { KO = { 'cta.join': '사전 신청하기' }; els.forEach((e) => { KO[e.dataset.i18n] = e.textContent; }); document.querySelectorAll('[data-i18n-alt]').forEach((e) => { KO[e.dataset.i18nAlt] = e.getAttribute('alt'); }); }
+  const d = lang === 'ko' ? KO : Object.assign({}, KO, T[lang]);
+  els.forEach((e) => { const v = d[e.dataset.i18n]; if (v != null) e.textContent = v; });
+  document.querySelectorAll('[data-i18n-alt]').forEach((e) => { const v = d[e.dataset.i18nAlt]; if (v != null) e.setAttribute('alt', v); });
+  document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : lang;
+  document.querySelectorAll('.langs button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+  const live = !!WAITLIST_URL;
+  ['cta-main', 'cta-end-btn'].forEach((id) => {
+    const a = document.getElementById(id); if (!a) return;
+    if (live) { a.href = WAITLIST_URL; a.target = '_blank'; a.rel = 'noopener'; a.removeAttribute('aria-disabled'); a.textContent = d['cta.join'] || T.en['cta.join']; }
+  });
+  const n = document.getElementById('cta-note'); if (n && live) n.hidden = true;
+}
+function pick() {
+  const h = (location.hash || '').slice(1);
+  if (['ko', 'en', 'ja', 'zh'].includes(h)) return h;
+  const nav = (navigator.language || 'ko').toLowerCase();
+  return nav.startsWith('ja') ? 'ja' : nav.startsWith('zh') ? 'zh' : nav.startsWith('en') ? 'en' : 'ko';
+}
+document.querySelectorAll('.langs button').forEach((b) => b.addEventListener('click', () => { location.hash = b.dataset.lang; }));
+window.addEventListener('hashchange', () => apply(pick()));
+document.querySelectorAll('a[aria-disabled="true"]').forEach((a) => a.addEventListener('click', (e) => e.preventDefault()));
+apply(pick());
+</script>
+</body>
+</html>

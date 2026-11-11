@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>리틀부스 개인정보 처리방침</title>
+<meta name="robots" content="noindex">
+<style>
+:root { --bg:#f6f6f4; --paper:#fff; --ink:#17171a; --sub:#54545c; --line:#dcdcd6; --pink:#d6126b; --warn-bg:#fff3d6; --warn-ink:#5c4300; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#121215; --paper:#1b1b20; --ink:#f0f0f2; --sub:#b4b4bc; --line:#2f2f36; --pink:#ff6aa2; --warn-bg:#3a2e0f; --warn-ink:#f4d98a; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg:#121215; --paper:#1b1b20; --ink:#f0f0f2; --sub:#b4b4bc; --line:#2f2f36; --pink:#ff6aa2; --warn-bg:#3a2e0f; --warn-ink:#f4d98a; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:'Noto Sans KR','Noto Sans JP','Noto Sans SC',system-ui,sans-serif; font-size:16.5px; line-height:1.8; word-break:keep-all;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:32px 64px; }
+main { max-width: 720px; margin: 0 auto; }
+a { color: var(--pink); }
+h1 { font-size: clamp(26px, 5vw, 36px); line-height:1.25; margin: 8px 0 6px; }
+h2 { font-size: 19px; margin: 34px 0 6px; }
+p, li { color: var(--sub); }
+ul { padding-left: 20px; margin: 6px 0; }
+.draft { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 12px 16px; font-size: 15px; line-height: 1.6; }
+.langs { display:flex; gap:8px; margin-bottom: 16px; }
+.langs a { text-decoration:none; color:var(--sub); border:1px solid var(--line); border-radius:999px; padding:2px 12px; font-size:14px; }
+.langs a[aria-current="true"] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+main [lang="en"] { display:none; }
+body.en main [lang="ko"] { display:none; }
+body.en main [lang="en"] { display:block; }
+.back { display:inline-block; margin-top: 30px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="langs"><a href="#ko" id="l-ko" aria-current="true">한국어</a><a href="#en" id="l-en">English</a></div>
+
+  <div lang="ko">
+    <p class="draft"><b>초안 · 법무 검토 전.</b> 이 문서는 앱 설계에 맞춘 초안이며 법률 자문이 아닙니다. 출시 전에 전문가 검토와 일본어·중국어 번역 검수를 거칩니다. 아래 연락처는 아직 정해지지 않았습니다.</p>
+    <h1>리틀부스 개인정보 처리방침</h1>
+    <p>시행일: 출시일 확정 후 기재</p>
+
+    <h2>1. 수집하는 개인정보</h2>
+    <p><b>없습니다.</b> 리틀부스는 계정이 없고, 어떤 데이터도 개발자나 제3자의 서버로 보내지 않습니다. 앱은 네트워크 요청을 하지 않도록 만들었습니다.</p>
+
+    <h2>2. 기기 안에 저장되는 정보</h2>
+    <p>사용자가 직접 입력한 아래 내용이 사용자의 기기에만 저장됩니다.</p>
+    <ul>
+      <li>행사 정보(이름·날짜·장소·메모), 상품·재고 정보, 판매 기록, 비용</li>
+      <li>함께 부스를 낸 사람의 이름 또는 별명(정산에 쓰기 위해 사용자가 입력한 경우)</li>
+      <li>언어 설정, 앱 잠금 설정</li>
+    </ul>
+    <p>데이터베이스는 암호화해 저장하도록 설계했고, 암호화 키는 기기의 키체인에 보관됩니다. 팀원의 실명 대신 별명을 쓰실 것을 권합니다.</p>
+
+    <h2>3. 제3자 제공·분석·광고</h2>
+    <p>제공하지 않습니다. 분석·광고·추적 도구를 사용하지 않습니다.</p>
+
+    <h2>4. 사용자가 직접 내보내는 경우</h2>
+    <p>사용자가 &lsquo;내보내기&rsquo;를 눌러 공유 시트에서 대상을 고르면, 그때에 한해 판매 기록(담당자 이름 포함)이 앱 밖으로 나갑니다. 파일을 받은 사람이 어떻게 보관하는지는 사용자가 정한 범위에 속하며 앱이 관여하지 않습니다.</p>
+
+    <h2>5. 보관과 삭제</h2>
+    <p>데이터는 앱을 삭제하거나 설정의 &lsquo;모든 데이터 삭제&rsquo;를 실행할 때까지 기기에 남습니다. 삭제하면 데이터베이스 파일과 암호화 키가 함께 지워지며 복구할 수 없습니다. 기기를 바꿀 때를 위해 암호화 백업 기능을 제공할 예정입니다.</p>
+
+    <h2>6. 변경</h2>
+    <p>이 방침이 바뀌면 앱 업데이트 설명과 이 페이지에 알립니다.</p>
+
+    <h2>7. 문의</h2>
+    <p>[공개 연락처를 정해 여기에 입력 — 개인 이메일은 사용하지 마세요]</p>
+  </div>
+
+  <div lang="en">
+    <p class="draft"><b>Draft — not legally reviewed.</b> This text describes how the app is designed and is not legal advice. It will be reviewed by a professional, and the Japanese and Chinese versions are pending native review. The contact below is not set yet.</p>
+    <h1>LittleBooth Privacy Policy</h1>
+    <p>Effective date: to be set at launch</p>
+
+    <h2>1. Personal information we collect</h2>
+    <p><b>None.</b> LittleBooth has no accounts and sends no data to the developer or any third party. The app is built not to make network requests.</p>
+
+    <h2>2. What is stored on your device</h2>
+    <p>Only what you type in, and only on your device:</p>
+    <ul lang="en">
+      <li>Event details (name, date, place, notes), products and stock, sales records, costs</li>
+      <li>Names or nicknames of the people you share a booth with, if you enter them for settlement</li>
+      <li>Language and app-lock settings</li>
+    </ul>
+    <p>The database is designed to be stored encrypted, with the key held in the device keychain. We recommend nicknames instead of real names for teammates.</p>
+
+    <h2>3. Sharing, analytics and ads</h2>
+    <p>None. The app uses no analytics, advertising or tracking tools.</p>
+
+    <h2>4. When you export</h2>
+    <p>Sales records (including owner names) leave the app only when you tap Export and choose a destination in the share sheet. What the recipient does with the file is outside the app.</p>
+
+    <h2>5. Retention and deletion</h2>
+    <p>Data stays on your device until you delete the app or use “Delete all data” in Settings. That erases the database file and the encryption key together and cannot be undone. An encrypted backup feature is planned for moving to a new device.</p>
+
+    <h2>6. Changes</h2>
+    <p>If this policy changes, we will say so in the app update notes and on this page.</p>
+
+    <h2>7. Contact</h2>
+    <p>[Enter a public contact address here — do not use a personal email]</p>
+  </div>
+
+  <a class="back" href="index.html">← LittleBooth</a>
+</main>
+<script>
+function go() {
+  var h = (location.hash || '').slice(1);
+  var en = h === 'en' || (h !== 'ko' && /^en/i.test(navigator.language || ''));
+  document.body.classList.toggle('en', en);
+  document.documentElement.lang = en ? 'en' : 'ko';
+  document.getElementById('l-ko').setAttribute('aria-current', String(!en));
+  document.getElementById('l-en').setAttribute('aria-current', String(en));
+}
+window.addEventListener('hashchange', go); go();
+</script>
+</body>
+</html>
