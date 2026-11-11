@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "리틀부스",
+    "slug": "littlebooth",
+    "scheme": "littlebooth",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "platforms": [
+      "ios"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.littlebooth.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "CFBundleLocalizations": [
+          "ko",
+          "en",
+          "ja",
+          "zh-Hans"
+        ],
+        "CFBundleDevelopmentRegion": "ko"
+      },
+      "entitlements": {
+        "com.apple.developer.default-data-protection": "NSFileProtectionComplete"
+      },
+      "privacyManifests": {
+        "NSPrivacyTracking": false,
+        "NSPrivacyTrackingDomains": [],
+        "NSPrivacyCollectedDataTypes": []
+      }
+    },
+    "plugins": [
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Unlock your LittleBooth ledger with Face ID."
+        }
+      ],
+      "expo-secure-store",
+      "expo-localization"
+    ]
+  }
+}
